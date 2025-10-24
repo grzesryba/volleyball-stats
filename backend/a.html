@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Volleyball Stats</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script type="importmap">
+  {
+    "imports": {
+      "nipplejs": "https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main class="container" id="app">
+    <header class="header">
+      <h1>Volleyball Stats</h1>
+      <div class="scoreboard" aria-label="Scoreboard">
+        <div class="team" id="teamA">
+          <div class="team-name">Team A</div>
+          <div class="score" id="scoreA">0</div>
+          <button class="btn small" id="addA">+ Point</button>
+        </div>
+        <div class="team" id="teamB">
+          <div class="team-name">Team B</div>
+          <div class="score" id="scoreB">0</div>
+          <button class="btn small" id="addB">+ Point</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="court-section">
+      <h2>Court (side view)</h2>
+      <div class="court" id="court" role="grid" aria-label="Court positions">
+        <!-- 6 positions, arranged 3 front / 3 back visually -->
+        <button class="pos" data-pos="1" role="gridcell" aria-pressed="false">1</button>
+        <button class="pos" data-pos="2" role="gridcell" aria-pressed="false">2</button>
+        <button class="pos" data-pos="3" role="gridcell" aria-pressed="false">3</button>
+        <button class="pos" data-pos="4" role="gridcell" aria-pressed="false">4</button>
+        <button class="pos" data-pos="5" role="gridcell" aria-pressed="false">5</button>
+        <button class="pos" data-pos="6" role="gridcell" aria-pressed="false">6</button>
+      </div>
+
+      <div class="actions-panel">
+        <div class="selected-info" id="selectedInfo">Selected: none</div>
+        <div class="actions">
+          <button class="btn" data-action="service-ace">Service Ace</button>
+          <button class="btn" data-action="service-error">Service Error</button>
+          <button class="btn" data-action="attack-pt">Attack Winner</button>
+          <button class="btn" data-action="attack-error">Attack Error</button>
+          <button class="btn" data-action="block-pt">Block Point</button>
+          <button class="btn" data-action="dig">Dig</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="log-section">
+      <h3>Event Log</h3>
+      <ul id="log" class="log" aria-live="polite"></ul>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
+
