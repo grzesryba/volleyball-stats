@@ -268,6 +268,12 @@ body {
     box-shadow: 0 4px 14px rgba(10, 102, 255, 0.12);
 }
 
+.pos[aria-pressed="true"] .red-circle {
+    background: red;
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(10, 102, 255, 0.12);
+}
+
 .player-circle[aria-pressed="true"] {
     background: #eef6ff;
     border-color: var(--accent);

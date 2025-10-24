@@ -5,43 +5,111 @@ import FirstServeChose from "./FirstServeChose";
 import ActionPanel from "../ActionPanel";
 
 function Match() {
-
-
     const {id} = useParams();
     const location = useLocation();
     const matchConfig = location.state?.matchConfig;
 
-    const [teamMembers, setTeamMembers] = useState(null)
+    const STORAGE_KEY = `match_state_${id}`;
 
-    const [pointNumber, setPointNumber] = useState(0)
-    const [scoreA, setScoreA] = useState(0)
-    const [scoreB, setScoreB] = useState(0)
+    const loadMatchState = () => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : null;
+        } catch (err) {
+            console.error("Błąd ładowania stanu:", err);
+            return null;
+        }
+    };
 
-    const [currentSetId, setCurrentSetId] = useState(null)
-    const [setNumber, setSetNumber] = useState(0)
-    const [setA, setSetA] = useState(0)
-    const [setB, setSetB] = useState(0)
-    const [lastPointWon, setLastPointWon] = useState(null)
+    const saveMatchState = (state) => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+            console.error("Błąd zapisywania stanu:", err);
+        }
+    };
 
-    const [isServingPhase, setIsServingPhase] = useState(null)
+    const savedState = loadMatchState();
 
-    const [isMyTeamServing, setIsMyTeamServing] = useState(null)
+    const [teamMembers, setTeamMembers] = useState(savedState?.teamMembers || null)
+    const [pointNumber, setPointNumber] = useState(savedState?.pointNumber || 0)
+    const [scoreA, setScoreA] = useState(savedState?.scoreA || 0)
+    const [scoreB, setScoreB] = useState(savedState?.scoreB || 0)
+    const [currentSetId, setCurrentSetId] = useState(savedState?.currentSetId || null)
+    const [setNumber, setSetNumber] = useState(savedState?.setNumber || 0)
+    const [setA, setSetA] = useState(savedState?.setA || 0)
+    const [setB, setSetB] = useState(savedState?.setB || 0)
+    const [lastPointWon, setLastPointWon] = useState(savedState?.lastPointWon || null)
+    const [isServingPhase, setIsServingPhase] = useState(savedState?.isServingPhase || null)
+    const [isMyTeamServing, setIsMyTeamServing] = useState(savedState?.isMyTeamServing || null)
+    const [clickedPlayerId, setClickedPlayerId] = useState(savedState?.clickedPlayerId || null)
+    const [currentPosition, setCurrentPosition] = useState(savedState?.currentPosition || null)
+    const [currentPositionId, setCurrentPositionId] = useState(savedState?.currentPositionId || null)
+    const [servePositions, setServePositions] = useState(savedState?.servePositions || null)
+    const [inGamePositions, setInGamePositions] = useState(savedState?.inGamePositions || null)
+    const [receivePositions, setReceivePositions] = useState(savedState?.receivePositions || null)
 
-    const [clickedPlayerId, setClickedPlayerId] = useState(null)
+    // Zapisz matchConfig do localStorage, jeśli istnieje
+    useEffect(() => {
+        if (matchConfig && !savedState) {
+            const configToSave = {
+                matchConfig: matchConfig
+            };
+            localStorage.setItem(`${STORAGE_KEY}_config`, JSON.stringify(configToSave));
+        }
+    }, [matchConfig]);
 
-    // Ogólnie
-    const [currentPosition, setCurrentPosition] = useState(null)
-    const [currentPositionId, setCurrentPositionId] = useState(null)
+    // Pobierz matchConfig z localStorage jeśli nie ma w location.state
+    const getMatchConfig = () => {
+        if (matchConfig) return matchConfig;
 
-    // Na boisku
-    const [servePositions, setServePositions] = useState(null)
-    const [inGamePositions, setInGamePositions] = useState(null)
-    const [receivePositions, setReceivePositions] = useState(null)
+        try {
+            const saved = localStorage.getItem(`${STORAGE_KEY}_config`);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.matchConfig;
+            }
+        } catch (err) {
+            console.error("Błąd ładowania konfiguracji:", err);
+        }
+        return null;
+    };
 
-//////////////////////////////  BĘDZIE ZMIENIANE CHYBA PO KAŻDYM PUNKCIE
+    const activeMatchConfig = getMatchConfig();
+
+    useEffect(() => {
+        if (!activeMatchConfig) return;
+
+        const stateToSave = {
+            teamMembers,
+            pointNumber,
+            scoreA,
+            scoreB,
+            currentSetId,
+            setNumber,
+            setA,
+            setB,
+            lastPointWon,
+            isServingPhase,
+            isMyTeamServing,
+            clickedPlayerId,
+            currentPosition,
+            currentPositionId,
+            servePositions,
+            inGamePositions,
+            receivePositions,
+            lastUpdate: new Date().toISOString()
+        };
+
+        saveMatchState(stateToSave);
+    }, [
+        teamMembers, pointNumber, scoreA, scoreB, currentSetId,
+        setNumber, setA, setB, lastPointWon, isServingPhase,
+        isMyTeamServing, clickedPlayerId, currentPosition,
+        currentPositionId, servePositions, inGamePositions, receivePositions
+    ]);
 
     const getGamePositions = async () => {
-
         console.log(currentPosition)
         console.log(typeof currentPosition)
         let x = {
@@ -56,7 +124,6 @@ function Match() {
 
         const data = await res.json();
 
-
         if (res.ok && data.serving_position && data.ingame_position && data.receive_position) {
             console.log("Serve:", data.serving_position);
             console.log("InGame:", data.ingame_position);
@@ -68,11 +135,9 @@ function Match() {
             if (!isMyTeamServing) {
                 setInGamePositions(prev => [prev[0], prev[3], prev[2], prev[1], prev[4], prev[5]])
             }
-
         } else {
             console.error("❌ Błąd przy pobieraniu nowych pozycji:", data);
         }
-
     }
 
     useEffect(() => {
@@ -82,8 +147,6 @@ function Match() {
         if (isMyTeamServing === null) return;
         getGamePositions();
     }, [currentPosition, isMyTeamServing]);
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 
     const createNewSet = async () => {
         const setData = {
@@ -101,15 +164,16 @@ function Match() {
         if (res.ok && data.set_id) {
             console.log("✅ Nowy set ID:", data.set_id);
             setCurrentSetId(data.set_id)
-
         } else {
             console.error("❌ Błąd przy tworzeniu seta:", data);
         }
     }
 
     const fetchPlayers = async () => {
+        if (!activeMatchConfig) return;
+
         try {
-            const res = await fetch(`http://127.0.0.1:8000/players_team/${matchConfig.team_A_id}`);
+            const res = await fetch(`http://127.0.0.1:8000/players_team/${activeMatchConfig.team_A_id}`);
             const data = await res.json();
             setTeamMembers(data || []);
         } catch (err) {
@@ -118,28 +182,37 @@ function Match() {
         }
     };
 
+    useEffect(() => {
+        if (servePositions && isMyTeamServing) {
+            setClickedPlayerId(servePositions[0]);
+        } else {
+            setClickedPlayerId(null)
+        }
+    }, [servePositions, isMyTeamServing]);
 
     useEffect(() => {
-        createNewSet()
+        if (setNumber > 0) {
+            createNewSet()
+        }
     }, [setNumber]);
 
     const createStartingPosition = async () => {
+        if (!activeMatchConfig) return;
 
         let pData = {
-            p1: matchConfig.positions[0].player_id,
-            p2: matchConfig.positions[1].player_id,
-            p3: matchConfig.positions[2].player_id,
-            p4: matchConfig.positions[3].player_id,
-            p5: matchConfig.positions[4].player_id,
-            p6: matchConfig.positions[5].player_id,
-            l: matchConfig.libero_id,
-            l_change1: matchConfig.liberoPartner1Id,
-            l_change2: matchConfig.liberoPartner2Id,
-            setter_position: matchConfig.setterPosition
+            p1: activeMatchConfig.positions[0].player_id,
+            p2: activeMatchConfig.positions[1].player_id,
+            p3: activeMatchConfig.positions[2].player_id,
+            p4: activeMatchConfig.positions[3].player_id,
+            p5: activeMatchConfig.positions[4].player_id,
+            p6: activeMatchConfig.positions[5].player_id,
+            l: activeMatchConfig.libero_id,
+            l_change1: activeMatchConfig.liberoPartner1Id,
+            l_change2: activeMatchConfig.liberoPartner2Id,
+            setter_position: activeMatchConfig.setterPosition
         }
 
         setCurrentPosition(pData)
-
 
         console.log("Dane do tworzenia nowej pozycji: ", pData)
 
@@ -160,20 +233,38 @@ function Match() {
     }
 
     useEffect(() => {
+        if (savedState && savedState.currentPosition) {
+            console.log("Wczytano zapisany stan meczu");
+            return;
+        }
+
         createStartingPosition()
         fetchPlayers()
     }, []);
 
+
+    useEffect(() => {
+        if (!teamMembers && activeMatchConfig) {
+            fetchPlayers();
+        }
+    }, [teamMembers, activeMatchConfig]);
+
     const handleServeChoose = (team) => {
         console.log("Wybrano:", team);
-        setIsMyTeamServing(team === "A");
+
+        if (team === "A") {
+            setIsMyTeamServing(true);
+            if (servePositions) {
+                setClickedPlayerId(servePositions[0])
+            }
+        } else {
+            setIsMyTeamServing(false)
+        }
         setLastPointWon(team === "A" ? "A" : "B")
         setIsServingPhase(true)
     };
 
     function getPlayerNumber(pos, pid = null) {
-        // console.log("fhnerigntr: ", servePositions)
-        // console.log("15654651: ", inGamePositions)
         let playerId = null
 
         if (isServingPhase && !isMyTeamServing) {
@@ -201,21 +292,19 @@ function Match() {
             setCurrentPosition(data.position)
             setServePositions(data.serving_position)
             setInGamePositions(data.ingame_position)
-
-
         } catch (err) {
             console.error("New rotation error", err);
         }
-
     }
 
     function handleAddPoint(winnerTeam) {
+        if (!activeMatchConfig) return;
 
         let winnerTeamId = null;
         if (winnerTeam === "A") {
-            winnerTeamId = matchConfig.team_A_id
+            winnerTeamId = activeMatchConfig.team_A_id
         } else
-            winnerTeamId = matchConfig.team_B_id || -1
+            winnerTeamId = activeMatchConfig.team_B_id || -1
 
         const pointConfig = {
             "set_id": currentSetId,
@@ -223,7 +312,7 @@ function Match() {
             "score_before_A": scoreA,
             "score_before_B": scoreB,
             "winner": winnerTeamId,
-            "position_id": matchConfig.position_id
+            "position_id": activeMatchConfig.position_id
         }
 
         if (winnerTeam === "A") {
@@ -232,7 +321,10 @@ function Match() {
                 make_rotation()
             }
             setLastPointWon("A")
-            setIsMyTeamServing(true)
+            setIsMyTeamServing(true);
+            if (servePositions) {
+                setClickedPlayerId(servePositions[0])
+            }
         } else if (winnerTeam === "B") {
             setLastPointWon("B")
             setScoreB(prevState => prevState + 1)
@@ -240,21 +332,18 @@ function Match() {
         }
 
         setIsServingPhase(true)
-
     }
 
     function handleServe() {
         setIsServingPhase(false)
     }
 
-
     function handlePositionPlayerClick(pos, p_id = null) {
-
         let playerId = null;
         if (p_id && isServingPhase && !isMyTeamServing) {
             playerId = p_id
         } else if (isServingPhase) {
-            playerId = servePositions[pos - 1]
+            playerId = servePositions[0]
         } else {
             playerId = inGamePositions[pos - 1]
         }
@@ -299,26 +388,24 @@ function Match() {
 
             <section className="court-section">
                 {servePositions && inGamePositions && currentPosition && !(!isMyTeamServing && isServingPhase) ? (
-                        <div className="court" id="court" role="grid" aria-label="Court positions">
-                            {currentPosition && [4, 3, 2, 5, 6, 1].map((pos) => (
-                                <button
-                                    key={pos}
-                                    className="pos"
-                                    data-pos={pos}
-                                    role="gridcell"
-                                    aria-pressed={teamMembers?.find(p => p.id === clickedPlayerId)?.number === getPlayerNumber(pos)}
-                                    onClick={() => handlePositionPlayerClick(pos)}
-                                >
+                    <div className="court" id="court" role="grid" aria-label="Court positions">
+                        {currentPosition && [4, 3, 2, 5, 6, 1].map((pos) => (
+                            <button
+                                key={pos}
+                                className="pos"
+                                data-pos={pos}
+                                role="gridcell"
+                                aria-pressed={teamMembers?.find(p => p.id === clickedPlayerId)?.number === getPlayerNumber(pos)}
+                                onClick={() => handlePositionPlayerClick(pos)}
+                            >
                             <span className={pos === 1 && isServingPhase && isMyTeamServing
                                 ? `player-circle red-circle bottom-line` : `player-circle`}>
                                 {getPlayerNumber(pos)}
                             </span>
-                                </button>
-                            ))}
-                        </div>) : null
-                    // <div className="loading">⏳ Ładowanie pozycji...</div>
+                            </button>
+                        ))}
+                    </div>) : null
                 }
-                {/*//////////////////////////////////////////////////////////////////////*/}
                 {!isMyTeamServing && isServingPhase && servePositions && inGamePositions && currentPosition ? (
                     <div className="court" id="court" role="grid" aria-label="Court positions">
                         {[4, 3, 2, 5, 6, 1].map((pos) => {
@@ -339,7 +426,7 @@ function Match() {
                                                 aria-pressed={clickedPlayerId === playerId}
                                                 className={
                                                     pos === 1 && isServingPhase && isMyTeamServing
-                                                        ? `player-circle red-circle ${positionName}`
+                                                        ? `player-circle ${positionName}`
                                                         : `player-circle ${positionName}`
                                                 }
                                                 role="button"
@@ -357,38 +444,29 @@ function Match() {
             <section className="substitutions-section">
                 <h3>Zmiany</h3>
                 <div className="substitutions-list">
-                    {/* Tutaj będą zmiany */}
                     <div className="substitution-item">
                         <span>Brak zmian</span>
                     </div>
                 </div>
             </section>
-            {/*<section className="log-section">*/}
-            {/*    <h3>Event Log</h3>*/}
-            {/*    <ul id="log" className="log" aria-live="polite"></ul>*/}
-            {/*</section>*/}
-            {/*///////////////////////////////////////////////////////////////////////////////////*/}
             <div className="actions-panel">
                 <div className="selected-info" id="selectedInfo">
                     Wybrany zawodnik: {clickedPlayerId || 'Brak'}
                 </div>
 
                 <ActionPanel
-                selectedPlayerId={clickedPlayerId}
-                functions={{
-                    'handleServe': handleServe
-                }}
-                isMyTeamServing={isMyTeamServing}
-            />
-
+                    selectedPlayerId={clickedPlayerId}
+                    functions={{
+                        'handleServe': handleServe
+                    }}
+                    isMyTeamServing={isMyTeamServing}
+                />
             </div>
 
-
             <FirstServeChose
-                isOpen={isMyTeamServing === null}
+                isOpen={isMyTeamServing === null && !savedState}
                 onChoose={handleServeChoose}
             />
-
         </main>
     )
 }
