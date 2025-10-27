@@ -4,8 +4,8 @@ from typing import Optional, List
 
 from fastapi import FastAPI
 from db import get_connection
-from models import Team, Match, Set, Positioning, InGameRequest
-from logic import calculate_position, make_rotation
+from models import Team, Match, Set, Positioning, InGameRequest, PointSituationDesc, Point
+from logic import calculate_position, make_rotation, handle_situation
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -172,15 +172,33 @@ def new_set(set: Set):
 
 @app.post("/positioning")
 def new_positioning(p: Positioning):
+
+    position_id = None
+
     conn = get_connection()
     c = conn.cursor()
+
     c.execute(
         """
-            INSERT INTO positioning (p1,p2,p3,p4,p5,p6,l,l_change1,l_change2, setter_position) 
-            VALUES (?,?,?,?,?,?,?,?,?,?)
+            SELECT id FROM positioning 
+            WHERE 
+            p1=? AND p2=? AND p3=? AND p4=? AND p5=? AND p6=? AND 
+            l=? AND l_change1=? AND l_change2=? AND  setter_position=? 
         """, (p.p1, p.p2, p.p3, p.p4, p.p5, p.p6, p.l, p.l_change1, p.l_change2, p.setter_position)
     )
-    position_id = c.lastrowid
+    row = c.fetchone()
+    if row:
+        position_id = c.lastrowid
+
+    else:
+        c.execute(
+            """
+                INSERT INTO positioning (p1,p2,p3,p4,p5,p6,l,l_change1,l_change2, setter_position) 
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+            """, (p.p1, p.p2, p.p3, p.p4, p.p5, p.p6, p.l, p.l_change1, p.l_change2, p.setter_position)
+        )
+        position_id = c.lastrowid
+
     conn.commit()
     conn.close()
     return {"position_id": position_id}
@@ -196,3 +214,68 @@ def get_new_rotation(p: Positioning):
     p = make_rotation(p)
     x = calculate_position(p, True)
     return {"position": p, "serving_position": x['serving_position'], "ingame_position": x['ingame_position']}
+
+
+@app.post("/point_situation")
+def add_new_point_situation(ps: PointSituationDesc):
+    winner = handle_situation(ps)
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    if winner:
+        c.execute("""
+            UPDATE points SET winner = ? WHERE id = ?
+        """, (winner, ps.point_id))
+
+    print(f"symbol: {ps.result}")
+    res1 = c.execute("""
+            SELECT * FROM Results where symbol = ?
+    """, (ps.result,))
+    row1 = res1.fetchone()
+    result_id = row1[0] if row1 else None
+
+    res2 = c.execute("""
+                SELECT * FROM Game_Elements where name = ?
+        """, (ps.game_element,))
+    row2 = res2.fetchone()
+    game_element_id = row2[0] if row2 else None
+
+    print(
+        f"result_id: {result_id}, game_element_id: {game_element_id}, ps.point_id: {ps.point_id}, ps.player_id: {ps.player_id}")
+    c.execute("""
+            INSERT INTO Point_Situation (result_id, game_element_id, point_id, player_id)
+            VALUES (?,?,?,?)
+    """, (result_id, game_element_id, ps.point_id, ps.player_id))
+    ps_id = c.lastrowid
+
+    conn.commit()
+    conn.close()
+    return {"winner": winner, "point_situation_id": ps_id, "desc": f"Dodano zdarzenie: {ps.game_element}: {ps.result}"}
+
+
+@app.post("/add_point")
+def add_new_point(p: Point):
+    conn = get_connection()
+    c = conn.cursor()
+
+    c.execute("""
+            INSERT INTO Points (set_id, point_no, score_before_A, score_before_B, winner, position_id)
+            VALUES (?,?,?,?,?,?)
+    """, (p.set_id, p.point_no, p.score_before_A, p.score_before_B, p.winner, p.position_id))
+    point_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return {"point_id": point_id}
+
+
+@app.post("/point/{id}/winner")
+def set_point_winner(id: int, winner: str):
+    conn = get_connection()
+    c = conn.cursor()
+    if winner:
+        c.execute("""
+            UPDATE points SET winner = ? WHERE id = ?
+        """, (winner, id))
+    conn.commit()
+    conn.close()

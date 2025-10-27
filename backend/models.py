@@ -34,10 +34,12 @@ class Set(BaseModel):
 
 
 class Point(BaseModel):
-    id: Optional[int]
-    match_id: int
-    player_id: int
-    action: str  # "atak", "blok", "serwis", "błąd" itp.
+    set_id: int
+    point_no: int
+    score_before_A: int
+    score_before_B: int
+    winner: Optional[str] = None
+    position_id: int
 
 
 class Positioning(BaseModel):
@@ -57,3 +59,10 @@ class Positioning(BaseModel):
 class InGameRequest(BaseModel):
     positions: Positioning
     isMyTeamServing: bool
+
+
+class PointSituationDesc(BaseModel):
+    result: str
+    game_element: str
+    point_id: int
+    player_id: int

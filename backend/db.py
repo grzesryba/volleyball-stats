@@ -91,10 +91,9 @@ def create_tables():
             point_no INTEGER NOT NULL,
             score_before_A INTEGER,
             score_before_B INTEGER,
-            winner INTEGER,
+            winner CHAR,
             position_id INTEGER,
             FOREIGN KEY(set_id) REFERENCES Sets(id),
-            FOREIGN KEY(winner) REFERENCES Teams(id),
             FOREIGN KEY(position_id) REFERENCES Positioning(id)
         );
     """)
@@ -115,14 +114,24 @@ def create_tables():
     """)
 
     # ===============================
-    # TABELA: Situations
+    # TABELA: Results
     # ===============================
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS Situations (
+        CREATE TABLE IF NOT EXISTS Results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            symbol CHAR NOT NULL
         );
     """)
+
+    # ===============================
+    # TABELA: Game Element
+    # ===============================
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Game_Elements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL
+            );
+        """)
 
     # ===============================
     # TABELA: Point_Situation
@@ -130,10 +139,12 @@ def create_tables():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Point_Situation (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            situation_id INTEGER NOT NULL,
+            result_id INTEGER NOT NULL,
+            game_element_id INTEGER NOT NULL,
             point_id INTEGER NOT NULL,
             player_id INTEGER,
-            FOREIGN KEY(situation_id) REFERENCES Situations(id),
+            FOREIGN KEY(result_id) REFERENCES Results(id),
+            FOREIGN KEY(game_element_id) REFERENCES Game_Elements(id),
             FOREIGN KEY(point_id) REFERENCES Points(id),
             FOREIGN KEY(player_id) REFERENCES Players(id)
         );
@@ -183,6 +194,23 @@ def seed_data():
 
         if not exists:
             c.execute("INSERT INTO Positions (name) VALUES (?)", (pos,))
+
+    gameElements = ["Zagrywka", "Przyjęcie", "Atak", "Obrona", "Blok", "Dogranie", "Nietypowy błąd", "Błąd przeciwnika"]
+    for elem in gameElements:
+        c.execute("SELECT COUNT(*) FROM Game_Elements WHERE name = ?", (elem,))
+        exists = c.fetchone()[0]
+
+        if not exists:
+            c.execute("INSERT INTO Game_Elements (name) VALUES (?)", (elem,))
+
+    # wszystkie oznaczenia normalnie jak w siatkówce, ? na nietypowy błąd (np błąd ustawienia) x na błąd przeciwnika
+    symbols = ["#", "+", "!", "-", "/", "=", "?", "x"]
+    for s in symbols:
+        c.execute("SELECT COUNT(*) FROM Results WHERE symbol = ?", (s,))
+        exists = c.fetchone()[0]
+
+        if not exists:
+            c.execute("INSERT INTO Results (symbol) VALUES (?)", (s,))
 
     conn.commit()
     conn.close()

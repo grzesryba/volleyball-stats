@@ -3,6 +3,7 @@ import {useLocation, useParams} from "react-router-dom";
 import '../styles/match.css'
 import FirstServeChose from "./FirstServeChose";
 import ActionPanel from "../ActionPanel";
+import {click} from "@testing-library/user-event/dist/click";
 
 function Match() {
     const {id} = useParams();
@@ -36,7 +37,7 @@ function Match() {
     const [scoreA, setScoreA] = useState(savedState?.scoreA || 0)
     const [scoreB, setScoreB] = useState(savedState?.scoreB || 0)
     const [currentSetId, setCurrentSetId] = useState(savedState?.currentSetId || null)
-    const [setNumber, setSetNumber] = useState(savedState?.setNumber || 0)
+    const [setNumber, setSetNumber] = useState(savedState?.setNumber || 1)
     const [setA, setSetA] = useState(savedState?.setA || 0)
     const [setB, setSetB] = useState(savedState?.setB || 0)
     const [lastPointWon, setLastPointWon] = useState(savedState?.lastPointWon || null)
@@ -48,6 +49,7 @@ function Match() {
     const [servePositions, setServePositions] = useState(savedState?.servePositions || null)
     const [inGamePositions, setInGamePositions] = useState(savedState?.inGamePositions || null)
     const [receivePositions, setReceivePositions] = useState(savedState?.receivePositions || null)
+    const [currentPointId, setCurrentPointId] = useState(savedState?.currentPointId || null)
 
     // Zapisz matchConfig do localStorage, jeśli istnieje
     useEffect(() => {
@@ -98,6 +100,7 @@ function Match() {
             servePositions,
             inGamePositions,
             receivePositions,
+            currentPointId,
             lastUpdate: new Date().toISOString()
         };
 
@@ -106,7 +109,7 @@ function Match() {
         teamMembers, pointNumber, scoreA, scoreB, currentSetId,
         setNumber, setA, setB, lastPointWon, isServingPhase,
         isMyTeamServing, clickedPlayerId, currentPosition,
-        currentPositionId, servePositions, inGamePositions, receivePositions
+        currentPositionId, servePositions, inGamePositions, receivePositions, currentPointId
     ]);
 
     const getGamePositions = async () => {
@@ -132,11 +135,11 @@ function Match() {
             setInGamePositions(data.ingame_position)
             setReceivePositions(data.receive_position)
 
-            if (!isMyTeamServing) {
+            if (!isMyTeamServing && currentPosition.setter_position === 1) {
                 setInGamePositions(prev => [prev[0], prev[3], prev[2], prev[1], prev[4], prev[5]])
             }
         } else {
-            console.error("❌ Błąd przy pobieraniu nowych pozycji:", data);
+            console.error("Błąd przy pobieraniu nowych pozycji:", data);
         }
     }
 
@@ -165,7 +168,7 @@ function Match() {
             console.log("✅ Nowy set ID:", data.set_id);
             setCurrentSetId(data.set_id)
         } else {
-            console.error("❌ Błąd przy tworzeniu seta:", data);
+            console.error("❌ Błąd przy tworzeniu seta:", setData);
         }
     }
 
@@ -191,9 +194,7 @@ function Match() {
     }, [servePositions, isMyTeamServing]);
 
     useEffect(() => {
-        if (setNumber > 0) {
-            createNewSet()
-        }
+        createNewSet()
     }, [setNumber]);
 
     const createStartingPosition = async () => {
@@ -281,6 +282,24 @@ function Match() {
         return player ? player.number : "?";
     }
 
+    const add_new_positioning = async () => {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/positioning`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(currentPosition),
+            });
+            const data = await res.json();
+
+            if (res.ok && data.position_id) {
+                setCurrentPositionId(data.position_id)
+            }
+
+        } catch (err) {
+            console.error("New rotation error", err);
+        }
+    }
+
     const make_rotation = async () => {
         try {
             const res = await fetch(`http://127.0.0.1:8000/rotation`, {
@@ -292,28 +311,45 @@ function Match() {
             setCurrentPosition(data.position)
             setServePositions(data.serving_position)
             setInGamePositions(data.ingame_position)
+
+            add_new_positioning()
+
         } catch (err) {
             console.error("New rotation error", err);
         }
     }
 
-    function handleAddPoint(winnerTeam) {
+    const set_point_winner = async (winner) => {
+
+        let x = {
+            winner: winner
+        }
+
+        const res = await fetch(`http://127.0.0.1:8000/point/${id}/winner?winner=${winner}`, {
+            method: "POST",
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            setCurrentPointId(null)
+        } else {
+            console.error("Błąd przy ustalaniu zwycięzcy punktu:", x);
+        }
+    }
+
+
+    async function handleAddPoint(winnerTeam) {
         if (!activeMatchConfig) return;
 
-        let winnerTeamId = null;
-        if (winnerTeam === "A") {
-            winnerTeamId = activeMatchConfig.team_A_id
-        } else
-            winnerTeamId = activeMatchConfig.team_B_id || -1
-
-        const pointConfig = {
-            "set_id": currentSetId,
-            "point_no": pointNumber,
-            "score_before_A": scoreA,
-            "score_before_B": scoreB,
-            "winner": winnerTeamId,
-            "position_id": activeMatchConfig.position_id
+        let p_id = currentPointId
+        if (!currentPointId) {
+            p_id = await createNewPoint();
+            setCurrentPointId(p_id)
         }
+
+        const newScoreA = winnerTeam === "A" ? scoreA + 1 : scoreA;
+        const newScoreB = winnerTeam === "B" ? scoreB + 1 : scoreB;
 
         if (winnerTeam === "A") {
             setScoreA(prevState => prevState + 1)
@@ -322,6 +358,10 @@ function Match() {
             }
             setLastPointWon("A")
             setIsMyTeamServing(true);
+
+            // handlePointSituations("x", "Błąd przeciwnika")
+            set_point_winner("A")
+
             if (servePositions) {
                 setClickedPlayerId(servePositions[0])
             }
@@ -329,13 +369,106 @@ function Match() {
             setLastPointWon("B")
             setScoreB(prevState => prevState + 1)
             setIsMyTeamServing(false)
+
+            // handlePointSituations("?", "Nietypowy błąd")
+            set_point_winner("B")
+
         }
 
+        if ((newScoreA >= 25 && (newScoreA - newScoreB >= 2)) ||
+            (newScoreB >= 25 && (newScoreB - newScoreA >= 2))) {
+            setPointNumber(0)
+            setScoreA(0)
+            setScoreB(0)
+            scoreA > scoreB ? setSetA(prev => prev + 1) : setSetB(prev => prev + 1)
+            setSetNumber(prev => prev + 1)
+            createNewSet()
+        }
+
+        setPointNumber(prev => prev + 1)
         setIsServingPhase(true)
     }
 
-    function handleServe() {
-        setIsServingPhase(false)
+
+    const [message, setMessage] = useState(null);
+    const point_situation = async (r, ge, point_id, player_id) => {
+
+        let ps_data = {
+            result: r,
+            game_element: ge,
+            point_id: point_id,
+            player_id: clickedPlayerId ? clickedPlayerId : player_id
+        }
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/point_situation`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(ps_data),
+            });
+            const data = await res.json();
+            if (res.ok && data.point_situation_id) {
+                showMessage(data.desc || "Zapisano sytuację!");
+
+                console.log("Data: ", data)
+                console.log("winner: ", data.winner)
+                if (data.winner) {
+                    console.log("THERE WAS A WINNERRRR")
+                    handleAddPoint(data.winner)
+                }
+                return true
+            }
+        } catch (err) {
+            console.error("New rotation error", err);
+            return false
+        }
+    }
+
+    const showMessage = (text) => {
+        setMessage(text);
+        setTimeout(() => setMessage(null), 2500);
+    };
+
+    async function handlePointSituations(symbol, element, player_id) {
+
+        let p_id = currentPointId
+        if (!currentPointId) {
+            p_id = await createNewPoint();
+        }
+
+        const success = await point_situation(symbol, element, p_id, player_id);
+        if (success) {
+            if (element === "Zagrywka" || element === "Przyjęcie") {
+                setIsServingPhase(false);
+            }
+        }
+    }
+
+    const createNewPoint = async () => {
+
+        let pData = {
+            set_id: currentSetId,
+            point_no: pointNumber,
+            score_before_A: scoreA,
+            score_before_B: scoreB,
+            winner: null,
+            position_id: currentPositionId
+        }
+
+        const res = await fetch(`http://127.0.0.1:8000/add_point`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(pData),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.point_id) {
+            console.log("Dodano nowy punkt: ", data)
+            setCurrentPointId(data.point_id)
+            return data.point_id
+        } else {
+            console.error("Błąd przy tworzeniu punktu dla:", pData);
+        }
     }
 
     function handlePositionPlayerClick(pos, p_id = null) {
@@ -359,7 +492,7 @@ function Match() {
                         <div className="score" id="scoreA">{scoreA}</div>
                         <button
                             className="btn small" id="addA"
-                            onClick={() => handleAddPoint("A")}>
+                            onClick={() => handlePointSituations("x", "Błąd przeciwnika", servePositions[0])}>
                             + Point
                         </button>
                     </div>
@@ -379,7 +512,7 @@ function Match() {
                         <div className="score" id="scoreB">{scoreB}</div>
                         <button
                             className="btn small" id="addB"
-                            onClick={() => handleAddPoint("B")}>
+                            onClick={() => handlePointSituations("?", "Nietypowy błąd", servePositions[0])}>
                             + Point
                         </button>
                     </div>
@@ -455,18 +588,23 @@ function Match() {
                 </div>
 
                 <ActionPanel
-                    selectedPlayerId={clickedPlayerId}
-                    functions={{
-                        'handleServe': handleServe
-                    }}
+                    handleButtons={handlePointSituations}
                     isMyTeamServing={isMyTeamServing}
+                    isServingPhase={isServingPhase}
                 />
             </div>
 
             <FirstServeChose
-                isOpen={isMyTeamServing === null && !savedState}
+                isOpen={isMyTeamServing === null && setA === 0 && setB === 0 && scoreA === 0 && scoreB === 0}
                 onChoose={handleServeChoose}
             />
+            <div>isServingPhase: {isServingPhase ? "Tak" : "Nie"}</div>
+            {message && (
+                <div
+                    className="fixed bottom-6 right-6 bg-black text-white p-3 rounded-lg shadow-lg text-sm opacity-90 animate-fade">
+                    {message}
+                </div>
+            )}
         </main>
     )
 }
