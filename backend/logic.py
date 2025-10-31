@@ -1,4 +1,4 @@
-from models import Positioning, PointSituationDesc
+from models import Positioning, PointSituationDesc, Substitution
 from enum import Enum
 
 
@@ -106,3 +106,38 @@ def handle_situation(ps: PointSituationDesc):
         point_winner = "B"
 
     return point_winner
+
+
+def handle_substitution(s: Substitution):
+
+    s2 = s.playerInId2 and s.playerOutId2
+
+    p: Positioning = s.currentPosition
+    positions = [p.p1, p.p2, p.p3, p.p4, p.p5, p.p6, p.l]
+    change1_on_position = None
+    change2_on_position = None
+
+    print(f"starting positions: {positions}")
+    for i, pid in enumerate(positions):
+        if s.playerOutId == pid:
+            change1_on_position = i + 1
+        elif s2 and s.playerOutId2 == pid:
+            change2_on_position = i + 1
+        print(f"Pid: {pid}, i: {i}, positions: {positions}")
+
+    positions[change1_on_position - 1] = s.playerInId
+    if s2:
+        positions[change2_on_position - 1] = s.playerInId2
+
+    p.p1, p.p2, p.p3, p.p4, p.p5, p.p6, p.l = positions[0], positions[1], positions[2], positions[3], positions[4], \
+        positions[5], positions[6]
+
+    if s2:
+        if p.setter_position == change1_on_position:
+            p.setter_position = change2_on_position
+        elif p.setter_position == change2_on_position:
+            p.setter_position = change1_on_position
+
+    x = calculate_position(p, s.isMyTeamServing)
+    return {"current_position": p, "serving_position": x['serving_position'], "ingame_position": x['ingame_position'],
+            'receive_position': x['receive_position']}

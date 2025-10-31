@@ -4,8 +4,8 @@ from typing import Optional, List
 
 from fastapi import FastAPI
 from db import get_connection
-from models import Team, Match, Set, Positioning, InGameRequest, PointSituationDesc, Point
-from logic import calculate_position, make_rotation, handle_situation
+from models import Team, Match, Set, Positioning, InGameRequest, PointSituationDesc, Point, Substitution
+from logic import calculate_position, make_rotation, handle_situation, handle_substitution
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -172,7 +172,6 @@ def new_set(set: Set):
 
 @app.post("/positioning")
 def new_positioning(p: Positioning):
-
     position_id = None
 
     conn = get_connection()
@@ -188,7 +187,7 @@ def new_positioning(p: Positioning):
     )
     row = c.fetchone()
     if row:
-        position_id = c.lastrowid
+        position_id = row[0]
 
     else:
         c.execute(
@@ -201,6 +200,7 @@ def new_positioning(p: Positioning):
 
     conn.commit()
     conn.close()
+    print(position_id)
     return {"position_id": position_id}
 
 
@@ -279,3 +279,13 @@ def set_point_winner(id: int, winner: str):
         """, (winner, id))
     conn.commit()
     conn.close()
+
+
+@app.post("/substitution")
+def make_substitution(s: Substitution):
+    print(s)
+    x = handle_substitution(s)
+    new_position_id = new_positioning(x["current_position"])
+    return {"position_id": new_position_id, "current_position": x["current_position"],
+            "serving_position": x['serving_position'], "ingame_position": x['ingame_position'],
+            "receive_position": x['receive_position']}

@@ -291,37 +291,116 @@ body {
 
 /* Sekcja zmian */
 .substitutions-section {
-    grid-column: 1;
-    grid-row: 3;
-    padding: 15px;
-    background: #f7f8fa;
-    border-radius: var(--radius);
-    border: 1px solid var(--pos-border);
+    background: #f8f8f8;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 16px;
 }
 
-.substitutions-section h3 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-}
-
-.substitutions-list {
+.substitutions-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sub-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    background: #fff;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.sub-btn:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.sub-btn.confirm {
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.sub-btn.confirm:hover {
+    background: #4caf50;
+    color: #fff;
+}
+
+.sub-btn.cancel {
+    border-color: #f44336;
+    color: #f44336;
+}
+
+.sub-btn.cancel:hover {
+    background: #f44336;
+    color: #fff;
 }
 
 .substitution-item {
-    padding: 10px 12px;
-    background: white;
+    background: #fff;
+    padding: 6px 10px;
     border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    border: 1px solid var(--pos-border);
+    margin-bottom: 6px;
+    border-left: 4px solid var(--accent);
 }
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 320px;
+    max-width: 90%;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.sub {
+    width: 500px;
+}
+
+.modal h4 {
+    margin-top: 0;
+    color: var(--accent);
+}
+
+.modal-content label {
+    display: block;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.modal-content select {
+    width: 100%;
+    padding: 6px;
+    margin-top: 4px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.modal-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
 
 .log-section {
     grid-column: 1;
@@ -339,7 +418,6 @@ body {
 
 .log {
     list-style: none;
-    padding: 0;
     margin: 0;
     flex: 1;
     overflow: auto;
@@ -625,3 +703,51 @@ body {
     }
 }
 
+/* --- Dodatki dla 2 par obok siebie w modalu --- */
+
+.modal-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.modal-content .pair-1,
+.modal-content .pair-2 {
+    background: #f9fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.modal-content h3 {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.modal-content label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+    margin-top: 6px;
+}
+
+.modal-content select {
+    width: 100%;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-top: 4px;
+    background: #fff;
+}
+
+/* Responsywność – na telefonie kolumny pod sobą */
+@media (max-width: 640px) {
+    .modal-content {
+        grid-template-columns: 1fr;
+    }
+}

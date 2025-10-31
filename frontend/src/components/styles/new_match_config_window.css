@@ -1,0 +1,54 @@
+.overlayStyle {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modalStyle {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.courtWrapper {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.courtGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 100px);
+    gap: 10px;
+    background: #00800033;
+    padding: 10px;
+    border-radius: 12px;
+    justify-items: center;
+    align-items: center;
+}
+
+.courtCell {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 5px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+.liberoContainer {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 10px;
+}

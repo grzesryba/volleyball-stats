@@ -3,7 +3,8 @@ import {useLocation, useParams} from "react-router-dom";
 import '../styles/match.css'
 import FirstServeChose from "./FirstServeChose";
 import ActionPanel from "../ActionPanel";
-import {click} from "@testing-library/user-event/dist/click";
+import CourtSetup from "../CourtSetup";
+import LiberoConfig from "../LiberoConfig";
 
 function Match() {
     const {id} = useParams();
@@ -50,6 +51,21 @@ function Match() {
     const [inGamePositions, setInGamePositions] = useState(savedState?.inGamePositions || null)
     const [receivePositions, setReceivePositions] = useState(savedState?.receivePositions || null)
     const [currentPointId, setCurrentPointId] = useState(savedState?.currentPointId || null)
+
+    const [showDoubleSub, setShowDoubleSub] = useState(false);
+    const [showSingleSub, setShowSingleSub] = useState(false);
+    const [substitutions, setSubstitutions] = useState([]);
+
+    // const [setterOut, setSetterOut] = useState("");
+    // const [oppositeIn, setOppositeIn] = useState("");
+    // const [oppositeOut, setOppositeOut] = useState("");
+    // const [setterIn, setSetterIn] = useState("");
+    const [playerOut1, setPlayerOut1] = useState("");       //setterOut
+    const [playerIn1, setPlayerIn1] = useState("");         //oppositeIn
+    const [playerOut2, setPlayerOut2] = useState("");       //oppositeOut
+    const [playerIn2, setPlayerIn2] = useState("");         //setterIn
+
+    const [selectPositionForNewSet, setSelectPositionForNewSet] = useState(false)
 
     // Zapisz matchConfig do localStorage, jeśli istnieje
     useEffect(() => {
@@ -268,7 +284,7 @@ function Match() {
     function getPlayerNumber(pos, pid = null) {
         let playerId = null
 
-        if (isServingPhase && !isMyTeamServing) {
+        if ((isServingPhase && !isMyTeamServing) || pid) {
             const p = teamMembers?.find(p => p.id === pid);
             return p ? p.number : "?";
         }
@@ -290,13 +306,14 @@ function Match() {
                 body: JSON.stringify(currentPosition),
             });
             const data = await res.json();
-
             if (res.ok && data.position_id) {
+                console.log("Position id: ", data.position_id)
                 setCurrentPositionId(data.position_id)
+                return data.position_id
             }
-
         } catch (err) {
             console.error("New rotation error", err);
+            return null
         }
     }
 
@@ -383,6 +400,7 @@ function Match() {
             scoreA > scoreB ? setSetA(prev => prev + 1) : setSetB(prev => prev + 1)
             setSetNumber(prev => prev + 1)
             createNewSet()
+            setSelectPositionForNewSet(true)
         }
 
         setPointNumber(prev => prev + 1)
@@ -445,13 +463,20 @@ function Match() {
 
     const createNewPoint = async () => {
 
+        let pos_id = null
+        if (!currentPositionId) {
+            pos_id = await add_new_positioning()
+        } else {
+            pos_id = currentPositionId
+        }
+
         let pData = {
             set_id: currentSetId,
             point_no: pointNumber,
             score_before_A: scoreA,
             score_before_B: scoreB,
             winner: null,
-            position_id: currentPositionId
+            position_id: pos_id
         }
 
         const res = await fetch(`http://127.0.0.1:8000/add_point`, {
@@ -482,6 +507,61 @@ function Match() {
         }
         setClickedPlayerId(playerId)
     }
+
+    const make_substitution = async (playerOut, playerIn, playerOut2, playerIn2) => {
+
+        const sData = {
+            playerOutId: playerOut,
+            playerInId: playerIn,
+            currentPosition: currentPosition,
+            playerOutId2: playerOut2 ? playerOut2 : null,
+            playerInId2: playerIn2 ? playerIn2 : null,
+            isMyTeamServing: isMyTeamServing
+        }
+        console.log(sData)
+        const res = await fetch('http://127.0.0.1:8000/substitution', {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(sData),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.position_id) {
+            console.log("Id pozycji po zmianie: ", data.position_id)
+            console.log("Pozycje po zmianie: ", data)
+            setCurrentPositionId(data.position_id)
+            setCurrentPosition(data.current_position)
+            setServePositions(data.serving_position)
+            setInGamePositions(data.ingame_position)
+            setReceivePositions(data.receive_position)
+        } else {
+            console.error("Błąd przy tworzeniu punktu dla:", sData);
+        }
+    }
+
+
+    const handleSub = () => {
+        make_substitution(playerOut1, playerIn1, null, null)
+    }
+
+    const handleDoubleSub = () => {
+        if (!playerOut1 || !playerIn1 || !playerOut2 || !playerIn2) {
+            console.error("NIE WYBRANO WSZYSTKICH POZYCJI DO USTAWIENIA PODWÓJNEJ ZMIANY");
+            return null
+        }
+        if ((playerOut1 === playerOut2) || (playerIn2 === playerIn1)) {
+            console.error("TEN SAM ZAWODNI NIE MOŻE 2 RAZY WEJŚĆ ANI 2 RAZY WYJŚĆ")
+            return null
+        }
+        console.log("Para 1 - Rozgrywający schodzi:", playerOut1);
+        console.log("Para 1 - Atakujący wchodzi:", playerIn1);
+        console.log("Para 2 - Atakujący schodzi:", playerOut2);
+        console.log("Para 2 - Rozgrywający wchodzi:", playerIn2);
+        setShowDoubleSub(false)
+        make_substitution(playerOut1, playerIn1, playerOut2, playerIn2)
+    };
+
 
     return (
         <main className="container" id="app">
@@ -574,14 +654,167 @@ function Match() {
                     </div>
                 ) : null}
             </section>
+
             <section className="substitutions-section">
-                <h3>Zmiany</h3>
-                <div className="substitutions-list">
-                    <div className="substitution-item">
-                        <span>Brak zmian</span>
-                    </div>
+                {/*<h3>Zmiany</h3>*/}
+
+                <div className="substitutions-buttons">
+                    <button className="sub-btn" onClick={() => setShowDoubleSub(true)}>
+                        🔄 Podwójna zmiana
+                    </button>
+                    <button className="sub-btn" onClick={() => setShowSingleSub(true)}>
+                        ↔️ Zmiana na pozycji
+                    </button>
                 </div>
+
+                {/* Modal podwójnej zmiany */}
+                {showDoubleSub && (
+                    <div className="modal-overlay" onClick={() => setShowDoubleSub(false)}>
+                        <div className="modal sub" onClick={(e) => e.stopPropagation()}>
+                            <h4>Podwójna zmiana</h4>
+                            <div className="modal-content grid grid-cols-2 gap-6">
+                                <div className="pair-1">
+                                    <h3 className="text-lg font-semibold mb-2 text-center">1 (para)</h3>
+
+                                    <label className="block">Rozgrywający schodzi:</label>
+                                    <select onChange={(e) => setPlayerOut1(e.target.value)}>
+                                        <option>Wybierz zawodnika</option>
+                                        {teamMembers.map((player) =>
+                                            player.id === currentPosition.p1 ||
+                                            player.id === currentPosition.p2 ||
+                                            player.id === currentPosition.p3 ||
+                                            player.id === currentPosition.p4 ||
+                                            player.id === currentPosition.p5 ||
+                                            player.id === currentPosition.p6 ||
+                                            player.id === currentPosition.l ? (
+                                                <option value={player.id}>
+                                                    {getPlayerNumber(null, player.id)}
+                                                </option>
+                                            ) : null
+                                        )}
+                                    </select>
+
+                                    <label className="block mt-2">Atakujący wchodzi:</label>
+                                    <select onChange={(e) => setPlayerIn1(e.target.value)}>
+                                        <option>Wybierz zawodnika</option>
+                                        {teamMembers.map((player) =>
+                                            player.id !== currentPosition.p1 &&
+                                            player.id !== currentPosition.p2 &&
+                                            player.id !== currentPosition.p3 &&
+                                            player.id !== currentPosition.p4 &&
+                                            player.id !== currentPosition.p5 &&
+                                            player.id !== currentPosition.p6 &&
+                                            player.id !== currentPosition.l ? (
+                                                <option value={player.id}>
+                                                    {getPlayerNumber(null, player.id)}
+                                                </option>
+                                            ) : null
+                                        )}
+                                    </select>
+                                </div>
+
+                                {/* --- Para 2 --- */}
+                                <div className="pair-2">
+                                    <h3 className="text-lg font-semibold mb-2 text-center">2 (para)</h3>
+
+                                    <label className="block">Atakujący schodzi:</label>
+                                    <select onChange={(e) => setPlayerOut2(e.target.value)}>
+                                        <option>Wybierz zawodnika</option>
+                                        {teamMembers.map((player) =>
+                                            player.id === currentPosition.p1 ||
+                                            player.id === currentPosition.p2 ||
+                                            player.id === currentPosition.p3 ||
+                                            player.id === currentPosition.p4 ||
+                                            player.id === currentPosition.p5 ||
+                                            player.id === currentPosition.p6 ||
+                                            player.id === currentPosition.l ? (
+                                                <option value={player.id}>
+                                                    {getPlayerNumber(null, player.id)}
+                                                </option>
+                                            ) : null
+                                        )}
+                                    </select>
+
+                                    <label className="block mt-2">Rozgrywający wchodzi:</label>
+                                    <select onChange={(e) => setPlayerIn2(e.target.value)}>
+                                        <option>Wybierz zawodnika</option>
+                                        {teamMembers.map((player) =>
+                                            player.id !== currentPosition.p1 &&
+                                            player.id !== currentPosition.p2 &&
+                                            player.id !== currentPosition.p3 &&
+                                            player.id !== currentPosition.p4 &&
+                                            player.id !== currentPosition.p5 &&
+                                            player.id !== currentPosition.p6 &&
+                                            player.id !== currentPosition.l ? (
+                                                <option value={player.id}>
+                                                    {getPlayerNumber(null, player.id)}
+                                                </option>
+                                            ) : null
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="modal-actions">
+                                <button className="sub-btn confirm" onClick={() => handleDoubleSub()}>Zatwierdź</button>
+                                <button className="sub-btn cancel" onClick={() => setShowDoubleSub(false)}>Anuluj
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal zwykłej zmiany */}
+                {showSingleSub && (
+                    <div className="modal-overlay" onClick={() => setShowSingleSub(false)}>
+                        <div className="modal sub" onClick={(e) => e.stopPropagation()}>
+                            <h4>Zmiana na pozycji</h4>
+                            <div className="modal-content">
+                                <label>Zawodnik schodzi:</label>
+                                <select onChange={(e) => setPlayerOut1(e.target.value)}>
+                                    <option>Wybierz zawodnika</option>
+                                    {teamMembers.map((player) =>
+                                        player.id === currentPosition.p1 ||
+                                        player.id === currentPosition.p2 ||
+                                        player.id === currentPosition.p3 ||
+                                        player.id === currentPosition.p4 ||
+                                        player.id === currentPosition.p5 ||
+                                        player.id === currentPosition.p6 ||
+                                        player.id === currentPosition.l ? (
+                                            <option value={player.id}>
+                                                {getPlayerNumber(null, player.id)}
+                                            </option>
+                                        ) : null
+                                    )}
+                                </select>
+                                <label>Zawodnik wchodzi:</label>
+                                <select onChange={(e) => setPlayerIn1(e.target.value)}>
+                                    <option>Wybierz zawodnika</option>
+                                    {teamMembers.map((player) =>
+                                        player.id !== currentPosition.p1 &&
+                                        player.id !== currentPosition.p2 &&
+                                        player.id !== currentPosition.p3 &&
+                                        player.id !== currentPosition.p4 &&
+                                        player.id !== currentPosition.p5 &&
+                                        player.id !== currentPosition.p6 &&
+                                        player.id !== currentPosition.l ? (
+                                            <option value={player.id}>
+                                                {getPlayerNumber(null, player.id)}
+                                            </option>
+                                        ) : null
+                                    )}
+                                </select>
+                            </div>
+                            <div className="modal-actions">
+                                <button className="sub-btn confirm" onClick={() => handleSub()}>Zatwierdź</button>
+                                <button className="sub-btn cancel" onClick={() => setShowSingleSub(false)}>Anuluj
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
+
+
             <div className="actions-panel">
                 <div className="selected-info" id="selectedInfo">
                     Wybrany zawodnik: {clickedPlayerId || 'Brak'}
@@ -598,7 +831,6 @@ function Match() {
                 isOpen={isMyTeamServing === null && setA === 0 && setB === 0 && scoreA === 0 && scoreB === 0}
                 onChoose={handleServeChoose}
             />
-            <div>isServingPhase: {isServingPhase ? "Tak" : "Nie"}</div>
             {message && (
                 <div
                     className="fixed bottom-6 right-6 bg-black text-white p-3 rounded-lg shadow-lg text-sm opacity-90 animate-fade">

@@ -1,4 +1,6 @@
 import {use, useEffect, useState} from "react";
+import '../styles/new_match_config_window.css'
+import CourtSetup from "../CourtSetup";
 
 const initialPositions = {
     1: null, 2: null, 3: null,
@@ -100,8 +102,8 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
     const playersOnCourtIds = Object.values(positions).filter(p => p).map(p => p.id);
 
     return (
-        <div style={overlayStyle}>
-            <div style={modalStyle}>
+        <div className="overlayStyle">
+            <div className="modalStyle">
                 <h2>!!!Nowy Mecz!!!</h2>
 
                 <label>Nazwa drużyny:</label>
@@ -139,9 +141,9 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
                 )}
 
                 {players.length > 0 && (
-                    <div style={courtWrapper}>
+                    <div className="courtWrapper">
                         <h3>Ustawienie początkowe</h3>
-                        <div style={courtGrid}>
+                        <div className="courtGrid">
                             {[4, 3, 2, 5, 6, 1].map((zone) => {
                                 // id zawodników przypisanych do innych stref (bez bieżącej strefy)
                                 const assignedPlayerIds = Object.values(positions)
@@ -154,7 +156,7 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
                                 }
 
                                 return (
-                                    <div key={zone} style={courtCell}>
+                                    <div key={zone} className="courtCell">
                                         <strong>{zone}</strong>
                                         <select
                                             value={positions[zone]?.id ?? ""}
@@ -188,7 +190,7 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
                     <div style={{marginTop: "25px"}}>
                         <h3>Libero</h3>
 
-                        <div style={liberoContainer}>
+                        <div className="liberoContainer">
                             <div>
                                 <label>Wybierz libero:</label>
                                 <select
@@ -290,57 +292,3 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
 }
 
 export default NewMatchConfigWindow;
-
-/* style constants (niezmienione) */
-const overlayStyle = {
-    position: "fixed",
-    top: 0, left: 0,
-    width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-};
-
-const modalStyle = {
-    backgroundColor: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    width: "600px",
-    maxHeight: "80vh",
-    overflowY: "auto"
-};
-
-const courtWrapper = {
-    marginTop: "20px",
-    textAlign: "center"
-};
-
-const courtGrid = {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gridTemplateRows: "repeat(2, 100px)",
-    gap: "10px",
-    backgroundColor: "#00800033",
-    padding: "10px",
-    borderRadius: "12px",
-    justifyItems: "center",
-    alignItems: "center"
-};
-
-const courtCell = {
-    backgroundColor: "#fff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "5px",
-    textAlign: "center",
-    width: "100%",
-    height: "100%"
-};
-
-const liberoContainer = {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    marginTop: "10px"
-};

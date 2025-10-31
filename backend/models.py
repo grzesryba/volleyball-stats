@@ -66,3 +66,11 @@ class PointSituationDesc(BaseModel):
     game_element: str
     point_id: int
     player_id: int
+
+class Substitution(BaseModel):
+    playerOutId: int
+    playerInId: int
+    currentPosition: Positioning
+    playerOutId2: Optional[int] = None
+    playerInId2: Optional[int] = None
+    isMyTeamServing: bool
