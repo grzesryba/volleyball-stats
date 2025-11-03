@@ -75,9 +75,8 @@ def create_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             match_id INTEGER NOT NULL,
             set_no INTEGER NOT NULL,
-            set_winner INTEGER,
-            FOREIGN KEY(match_id) REFERENCES Matches(id),
-            FOREIGN KEY(set_winner) REFERENCES Teams(id)
+            set_winner CHAR,
+            FOREIGN KEY(match_id) REFERENCES Matches(id)
         );
     """)
 

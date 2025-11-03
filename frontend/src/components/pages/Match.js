@@ -1,10 +1,12 @@
 import {useEffect, useState} from "react";
 import {useLocation, useParams} from "react-router-dom";
-import '../styles/match.css'
 import FirstServeChose from "./FirstServeChose";
 import ActionPanel from "../ActionPanel";
 import CourtSetup from "../CourtSetup";
 import LiberoConfig from "../LiberoConfig";
+import MatchEndWindow from "../MatchEndWindow";
+import MatchEndedNotice from "../MatchEndedNotice";
+import '../styles/match.css'
 
 function Match() {
     const {id} = useParams();
@@ -66,6 +68,9 @@ function Match() {
     const [playerIn2, setPlayerIn2] = useState("");         //setterIn
 
     const [selectPositionForNewSet, setSelectPositionForNewSet] = useState(false)
+
+    const [endMatchButtonClicked, setEndMatchButtonClicked] = useState(false)
+    const [matchEnded, setMatchEnded] = useState()
 
     // Zapisz matchConfig do localStorage, jeśli istnieje
     useEffect(() => {
@@ -130,7 +135,6 @@ function Match() {
 
     const getGamePositions = async () => {
         console.log(currentPosition)
-        console.log(typeof currentPosition)
         let x = {
             'positions': currentPosition,
             'isMyTeamServing': isMyTeamServing
@@ -210,7 +214,9 @@ function Match() {
     }, [servePositions, isMyTeamServing]);
 
     useEffect(() => {
-        createNewSet()
+        if(!currentSetId) {
+            createNewSet()
+        }
     }, [setNumber]);
 
     const createStartingPosition = async () => {
@@ -298,12 +304,12 @@ function Match() {
         return player ? player.number : "?";
     }
 
-    const add_new_positioning = async () => {
+    const add_new_positioning = async (pos = currentPosition) => {
         try {
             const res = await fetch(`http://127.0.0.1:8000/positioning`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(currentPosition),
+                body: JSON.stringify(pos),
             });
             const data = await res.json();
             if (res.ok && data.position_id) {
@@ -329,20 +335,39 @@ function Match() {
             setServePositions(data.serving_position)
             setInGamePositions(data.ingame_position)
 
-            add_new_positioning()
+            add_new_positioning(data.position)
 
         } catch (err) {
             console.error("New rotation error", err);
         }
     }
 
-    const set_point_winner = async (winner) => {
+    const set_point_winner = async (winner, pointId=currentPointId) => {
 
         let x = {
             winner: winner
         }
 
-        const res = await fetch(`http://127.0.0.1:8000/point/${id}/winner?winner=${winner}`, {
+        const res = await fetch(`http://127.0.0.1:8000/point/${pointId}/winner?winner=${winner}`, {
+            method: "POST",
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            setCurrentPointId(null)
+        } else {
+            console.error("Błąd przy ustalaniu zwycięzcy punktu:", x);
+        }
+    }
+
+    const set_set_winner = async (winner) => {
+
+        let x = {
+            winner: winner
+        }
+
+        const res = await fetch(`http://127.0.0.1:8000/set/${currentSetId}/winner?winner=${winner}`, {
             method: "POST",
         });
 
@@ -356,11 +381,10 @@ function Match() {
     }
 
 
-    async function handleAddPoint(winnerTeam) {
+    async function handleAddPoint(winnerTeam, p_id=currentPointId) {
         if (!activeMatchConfig) return;
 
-        let p_id = currentPointId
-        if (!currentPointId) {
+        if (!p_id) {
             p_id = await createNewPoint();
             setCurrentPointId(p_id)
         }
@@ -377,7 +401,7 @@ function Match() {
             setIsMyTeamServing(true);
 
             // handlePointSituations("x", "Błąd przeciwnika")
-            set_point_winner("A")
+            set_point_winner("A",p_id)
 
             if (servePositions) {
                 setClickedPlayerId(servePositions[0])
@@ -388,8 +412,7 @@ function Match() {
             setIsMyTeamServing(false)
 
             // handlePointSituations("?", "Nietypowy błąd")
-            set_point_winner("B")
-
+            set_point_winner("B",p_id)
         }
 
         if ((newScoreA >= 25 && (newScoreA - newScoreB >= 2)) ||
@@ -398,6 +421,7 @@ function Match() {
             setScoreA(0)
             setScoreB(0)
             scoreA > scoreB ? setSetA(prev => prev + 1) : setSetB(prev => prev + 1)
+            scoreA > scoreB ? set_set_winner("A") : set_set_winner("B")
             setSetNumber(prev => prev + 1)
             createNewSet()
             setSelectPositionForNewSet(true)
@@ -409,6 +433,7 @@ function Match() {
 
 
     const [message, setMessage] = useState(null);
+
     const point_situation = async (r, ge, point_id, player_id) => {
 
         let ps_data = {
@@ -431,7 +456,7 @@ function Match() {
                 console.log("winner: ", data.winner)
                 if (data.winner) {
                     console.log("THERE WAS A WINNERRRR")
-                    handleAddPoint(data.winner)
+                    handleAddPoint(data.winner, point_id)
                 }
                 return true
             }
@@ -451,6 +476,7 @@ function Match() {
         let p_id = currentPointId
         if (!currentPointId) {
             p_id = await createNewPoint();
+            setCurrentPointId(p_id);
         }
 
         const success = await point_situation(symbol, element, p_id, player_id);
@@ -488,7 +514,7 @@ function Match() {
         const data = await res.json();
 
         if (res.ok && data.point_id) {
-            console.log("Dodano nowy punkt: ", data)
+            console.log("Dodano nowy punkt: ", data, "dla", pData)
             setCurrentPointId(data.point_id)
             return data.point_id
         } else {
@@ -511,11 +537,11 @@ function Match() {
     const make_substitution = async (playerOut, playerIn, playerOut2, playerIn2) => {
 
         const sData = {
-            playerOutId: playerOut,
-            playerInId: playerIn,
+            playerOutId: parseInt(playerOut),
+            playerInId: parseInt(playerIn),
             currentPosition: currentPosition,
-            playerOutId2: playerOut2 ? playerOut2 : null,
-            playerInId2: playerIn2 ? playerIn2 : null,
+            playerOutId2: playerOut2 ? parseInt(playerOut2) : null,
+            playerInId2: playerIn2 ? parseInt(playerIn2) : null,
             isMyTeamServing: isMyTeamServing
         }
         console.log(sData)
@@ -562,6 +588,59 @@ function Match() {
         make_substitution(playerOut1, playerIn1, playerOut2, playerIn2)
     };
 
+    const startNewSet = () => {
+        setSelectPositionForNewSet(false)
+        setCurrentPosition({
+            p1: positions[1].id,
+            p2: positions[2].id,
+            p3: positions[3].id,
+            p4: positions[4].id,
+            p5: positions[5].id,
+            p6: positions[6].id,
+            l: liberoId,
+            l_change1: liberoPartner1Id,
+            l_change2: liberoPartner2Id,
+            setter_position: setterPosition
+        })
+    }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const [positions, setPositions] = useState({1: null, 2: null, 3: null, 4: null, 5: null, 6: null})
+    const [liberoId, setLiberoId] = useState(null);
+    const [liberoPartner1Id, setLiberoPartner1Id] = useState(null);
+    const [liberoPartner2Id, setLiberoPartner2Id] = useState(null);
+    const [setterPosition, setSetterPosition] = useState(null)
+
+    const assignPlayerToZone = (zone, player) => {
+        setPositions((prev) => ({
+            ...prev,
+            [zone]: player || null
+        }));
+        if (!player && liberoPartner1Id && liberoPartner1Id === positions[zone]?.id
+            && liberoPartner2Id && liberoPartner2Id === positions[zone]?.id) {
+            setLiberoPartner1Id(null);
+            setLiberoPartner2Id(null);
+        }
+    };
+
+    const playersOnCourtIds = Object.values(positions).filter(p => p).map(p => p.id);
+
+    const allPositionsFilled =
+        Object.values(positions).every((p) => p && p.id) &&
+        liberoId != null &&
+        liberoPartner1Id != null &&
+        liberoPartner2Id != null &&
+        setterPosition != null;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function endMatch() {
+        if (scoreA !== scoreB) {
+            scoreA > scoreB ? set_set_winner("A") : set_set_winner("B")
+        }
+    }
 
     return (
         <main className="container" id="app">
@@ -577,14 +656,25 @@ function Match() {
                         </button>
                     </div>
 
-                    <div className="team">
-                        <div className="team-name">setA</div>
-                        <div className="score">{setA}</div>
-                    </div>
-
-                    <div className="team">
-                        <div className="team-name">setB</div>
-                        <div className="score">{setB}</div>
+                    <div className="sets-container">
+                        <div className="sets-row">
+                            <div className="team set-display">
+                                <div className="team-name">setA</div>
+                                <div className="score">{setA}</div>
+                            </div>
+                            <div className="team set-display">
+                                <div className="team-name">setB</div>
+                                <div className="score">{setB}</div>
+                            </div>
+                        </div>
+                        <div className="sets-buttons">
+                            <button className="btn small set-btn" onClick={() => setEndMatchButtonClicked(true)}>
+                                zakończ mecz
+                            </button>
+                            <button className="btn small set-btn">
+                                Przycisk 2
+                            </button>
+                        </div>
                     </div>
 
                     <div className="team" id="teamB">
@@ -837,6 +927,52 @@ function Match() {
                     {message}
                 </div>
             )}
+
+            {teamMembers && teamMembers.length > 0 && selectPositionForNewSet && (
+                <div className="overlayStyle">
+                    <div className="modalStyle">
+                        <CourtSetup
+                            players={teamMembers}
+                            positions={positions}
+                            liberoId={liberoId}
+                            assignPlayerToZone={assignPlayerToZone}
+                        />
+                        <LiberoConfig
+                            players={teamMembers}
+                            positions={positions}
+                            liberoId={liberoId}
+                            setLiberoId={setLiberoId}
+                            liberoPartner1Id={liberoPartner1Id}
+                            setLiberoPartner1Id={setLiberoPartner1Id}
+                            liberoPartner2Id={liberoPartner2Id}
+                            setLiberoPartner2Id={setLiberoPartner2Id}
+                            setterPosition={setterPosition}
+                            setSetterPosition={setSetterPosition}
+                            playersOnCourtIds={playersOnCourtIds}
+                        />
+
+                        <div style={{marginTop: "20px", textAlign: "right"}}>
+                            <button
+                                onClick={startNewSet}
+                                disabled={!allPositionsFilled}
+                            >
+                                ✅ Rozpocznij set
+                            </button>
+                            {/*<button onClick={() => console.log("ANULUJE")} style={{marginLeft: "10px"}}>Anuluj</button>*/}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {endMatchButtonClicked && (
+                <MatchEndWindow
+                    onClose={() => setEndMatchButtonClicked(false)}
+                    finalScore={{teamA: scoreA, teamB: scoreB, setsA: setA, setsB: setB}}
+                    endMatch={endMatch}
+                    match_id={id}
+                />
+            )}
+
         </main>
     )
 }

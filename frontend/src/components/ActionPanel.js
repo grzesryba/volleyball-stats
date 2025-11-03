@@ -1,6 +1,5 @@
 function ActionPanel({handleButtons, isMyTeamServing, isServingPhase}) {
 
-    console.log("Render ActionPanel", isServingPhase);
     return (
         <div className="actions-grid">
             {/* Nagłówki kolumn */}

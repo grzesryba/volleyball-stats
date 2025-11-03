@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from db import get_connection
 from models import Team, Match, Set, Positioning, InGameRequest, PointSituationDesc, Point, Substitution
 from logic import calculate_position, make_rotation, handle_situation, handle_substitution
+from stats import get_whole_team_stats, get_match_set_results
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -281,11 +282,69 @@ def set_point_winner(id: int, winner: str):
     conn.close()
 
 
+@app.post("/set/{id}/winner")
+def set_set_winner(id: int, winner: str):
+    conn = get_connection()
+    c = conn.cursor()
+    if winner:
+        c.execute("""
+            UPDATE sets SET set_winner = ? WHERE id = ?
+        """, (winner, id))
+    conn.commit()
+    conn.close()
+
+
 @app.post("/substitution")
 def make_substitution(s: Substitution):
     print(s)
     x = handle_substitution(s)
-    new_position_id = new_positioning(x["current_position"])
+    new_position_id = new_positioning(x["current_position"])["position_id"]
     return {"position_id": new_position_id, "current_position": x["current_position"],
             "serving_position": x['serving_position'], "ingame_position": x['ingame_position'],
             "receive_position": x['receive_position']}
+
+
+@app.get("/stats/match/{id}")
+def get_points_situations(id: int):
+    return get_whole_team_stats(id)
+
+
+@app.get("/match/{id}/info")
+def get_match_team_name(id: int):
+    conn = get_connection()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT t.name FROM matches as m
+        JOIN teams as t on t.id=m.team_A_id
+        WHERE m.id=?
+    """, (id,))
+    team_name = c.fetchone()[0]
+
+    c.execute("""
+        SELECT match_date FROM matches WHERE id=?
+    """, (id,))
+    date = c.fetchone()[0]
+
+    sets = get_match_set_results(id)
+    print(sets)
+    conn.commit()
+    conn.close()
+    return {"name": team_name, "date": date, "A_winner": sets["A_winner"], "B_winner": sets["B_winner"]}
+
+
+@app.get("/match/{id}/sets")
+def get_sets(id: int):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT s.id FROM matches as m
+        JOIN sets as s on s.match_id=m.id
+        WHERE m.id=? and (s.set_winner="A" or s.set_winner="B")
+    """, (id,))
+    sets = {row['id'] for row in c.fetchall()}
+    conn.commit()
+    conn.close()
+
+    return sets
+

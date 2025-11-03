@@ -1,6 +1,7 @@
 import {use, useEffect, useState} from "react";
 import '../styles/new_match_config_window.css'
 import CourtSetup from "../CourtSetup";
+import LiberoConfig from "../LiberoConfig";
 
 const initialPositions = {
     1: null, 2: null, 3: null,
@@ -141,139 +142,27 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
                 )}
 
                 {players.length > 0 && (
-                    <div className="courtWrapper">
-                        <h3>Ustawienie początkowe</h3>
-                        <div className="courtGrid">
-                            {[4, 3, 2, 5, 6, 1].map((zone) => {
-                                // id zawodników przypisanych do innych stref (bez bieżącej strefy)
-                                const assignedPlayerIds = Object.values(positions)
-                                    .filter((p) => p && p.id !== positions[zone]?.id)
-                                    .map((p) => p.id);
-
-                                // zablokuj także przypisanie zawodnika będącego libero
-                                if (liberoId && liberoId !== positions[zone]?.id) {
-                                    assignedPlayerIds.push(liberoId);
-                                }
-
-                                return (
-                                    <div key={zone} className="courtCell">
-                                        <strong>{zone}</strong>
-                                        <select
-                                            value={positions[zone]?.id ?? ""}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (!val) {
-                                                    assignPlayerToZone(zone, null);
-                                                    return;
-                                                }
-                                                const player = players.find((pl) => pl.id === parseInt(val, 10));
-                                                assignPlayerToZone(zone, player || null);
-                                            }}
-                                        >
-                                            <option value="">--</option>
-                                            {players
-                                                .filter((p) => !assignedPlayerIds.includes(p.id))
-                                                .map((p) => (
-                                                    <option key={p.id} value={p.id}>
-                                                        {p.number}. {p.name} {p.surname}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {players.length > 0 && (
-                    <div style={{marginTop: "25px"}}>
-                        <h3>Libero</h3>
-
-                        <div className="liberoContainer">
-                            <div>
-                                <label>Wybierz libero:</label>
-                                <select
-                                    value={liberoId ?? ""}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setLiberoId(v ? parseInt(v, 10) : null);
-                                        // jeżeli wybraliśmy libero który był wcześniej partnerem libero (rzadkie), to nic specjalnego
-                                    }}
-                                >
-                                    <option value="">-- brak --</option>
-                                    {/*
-                                        WYKLUCZAMY zawodników, którzy są już na boisku,
-                                        żeby nie mogło być jednocześnie libero i grającego.
-                                    */}
-                                    {players
-                                        .filter((p) => !playersOnCourtIds.includes(p.id))
-                                        .map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.number}. {p.name} {p.surname}
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label>Z kim się zmienia:</label>
-
-                                <label>1 do zmiany</label>
-                                <select
-                                    value={liberoPartner1Id ?? ""}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setLiberoPartner1Id(v ? parseInt(v, 10) : null);
-                                    }}
-                                >
-                                    <option value="">-- brak --</option>
-                                    {Object.values(positions)
-                                        .filter((p) => p && p.id !== liberoPartner2Id) // tylko rzeczywiste przypisania
-                                        .map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.number}. {p.name} {p.surname}
-                                            </option>
-                                        ))}
-                                </select>
-
-                                <label>2 do zmiany</label>
-                                <select
-                                    value={liberoPartner2Id ?? ""}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setLiberoPartner2Id(v ? parseInt(v, 10) : null);
-                                    }}
-                                >
-                                    <option value="">-- brak --</option>
-                                    {Object.values(positions)
-                                        .filter((p) => p && p.id !== liberoPartner1Id) // tylko rzeczywiste przypisania
-                                        .map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.number}. {p.name} {p.surname}
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label>Pozycja rozgrywającego:</label>
-                                <select
-                                    value={setterPosition ?? ""}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setSetterPosition(v ? parseInt(v, 10) : null);
-                                    }}
-                                >
-                                    <option value={null}>-- brak --</option>
-                                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                                        <option key={num} value={num}>
-                                            {num}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    <>
+                        <CourtSetup
+                            players={players}
+                            positions={positions}
+                            liberoId={liberoId}
+                            assignPlayerToZone={assignPlayerToZone}
+                        />
+                        <LiberoConfig
+                            players={players}
+                            positions={positions}
+                            liberoId={liberoId}
+                            setLiberoId={setLiberoId}
+                            liberoPartner1Id={liberoPartner1Id}
+                            setLiberoPartner1Id={setLiberoPartner1Id}
+                            liberoPartner2Id={liberoPartner2Id}
+                            setLiberoPartner2Id={setLiberoPartner2Id}
+                            setterPosition={setterPosition}
+                            setSetterPosition={setSetterPosition}
+                            playersOnCourtIds={playersOnCourtIds}
+                        />
+                    </>
                 )}
 
                 <div style={{marginTop: "20px", textAlign: "right"}}>

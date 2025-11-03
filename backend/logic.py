@@ -132,6 +132,8 @@ def handle_substitution(s: Substitution):
     p.p1, p.p2, p.p3, p.p4, p.p5, p.p6, p.l = positions[0], positions[1], positions[2], positions[3], positions[4], \
         positions[5], positions[6]
 
+
+
     if s2:
         if p.setter_position == change1_on_position:
             p.setter_position = change2_on_position

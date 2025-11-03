@@ -33,6 +33,8 @@ function Matches() {
 
         if (res.ok && data.match_id) {
             console.log("✅ Nowy mecz ID:", data.match_id);
+            localStorage.removeItem(`match_state_${data.match_id}`);
+            localStorage.removeItem(`match_state_${data.match_id}_config`);
             navigate(`/match/${data.match_id}`, {state: {matchConfig}});
         } else {
             console.error("❌ Błąd przy tworzeniu meczu:", data);
