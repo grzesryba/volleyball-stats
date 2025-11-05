@@ -65,8 +65,9 @@ function MatchStats() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-background p-6">
-            <div className="max-w-7xl mx-auto">
+        <body className="stats-body">
+        <div className="stats-root stats-min-h-screen stats-bg-background stats-p-6">
+            <div className="stats-max-w-7xl stats-mx-auto">
                 <StatsHeader
                     homeTeam={teamName}
                     awayTeam="Opponents"
@@ -109,6 +110,7 @@ function MatchStats() {
                 />
             </div>
         </div>
+        </body>
     );
 }
 

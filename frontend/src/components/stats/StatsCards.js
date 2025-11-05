@@ -3,12 +3,12 @@ import './stats.css';
 
 
 const StatCard = ({title, value, subtitle, icon, trend}) => (
-    <div className="stat-card">
-        <div className="stat-content">
-            <div className="stat-text">
-                <p className="stat-title">{title}</p>
-                <p className="stat-value">{value}</p>
-                <p className="stat-subtitle">{subtitle}</p>
+    <div className="stats-stat-card">
+        <div className="stats-stat-content">
+            <div className="stats-stat-text">
+                <p className="stats-stat-title">{title}</p>
+                <p className="stats-stat-value">{value}</p>
+                <p className="stats-stat-subtitle">{subtitle}</p>
             </div>
         </div>
     </div>

@@ -1,40 +1,20 @@
 import React from 'react';
 import './stats.css';
 
-function DetailedStatsTable({selectedElement, selectedSet, points}) {
+function DetailedStatsTable({ selectedElement, selectedSet, points }) {
     const getTableData = () => {
         const isFiltered = selectedSet !== "all";
+        const filteredPoints = isFiltered ? points.filter(p => p[1] === selectedSet) : points;
 
-        const filteredPoints = isFiltered
-            ? points.filter(p => p[1] === selectedSet)
-            : points;
-
-
-        const countBySymbol = (data, symbol) => data.filter(x => x[7] === symbol).length;
-
-        const successRate = (data, el) => {
-            if (el === "Błąd przeciwnika" || el === "Nietypowy błąd") {
-                const total = filteredPoints.length;
-                const cnt = data.length;
-                const rate = cnt / total * 100;
-                return `${rate.toFixed(1)}%`;
-            }
+        const calcEfficiency = (data) => {
             const total = data.length;
-            if (total === 0) return "0%";
-            const positive = countBySymbol(data, "#") + countBySymbol(data, "+");
-            const negative = countBySymbol(data, "=") + countBySymbol(data, "/");
-            const rate = ((positive - negative) / total) * 100;
-            return `${rate.toFixed(1)}%`;
+            const positive = data.filter(x => x[7] === "#" || x[7] === "+").length;
+            const negative = data.filter(x => x[7] === "=" || x[7] === "/").length;
+            return total > 0 ? ((positive - negative) / total * 100).toFixed(1) : 0;
         };
 
-        const getQualityFromRate = (rate, el) => {
-            if (el==="Błąd przeciwnika") {
-                return "neutral"
-            }
-            if(el === "Nietypowy błąd"){
-                return "error"
-            }
-            const value = parseFloat(rate.replace('%', ''));
+        const getQualityFromRate = (rate) => {
+            const value = parseFloat(rate);
             if (isNaN(value)) return "neutral";
             if (value >= 80) return "perfect";
             if (value >= 70) return "great";
@@ -43,135 +23,115 @@ function DetailedStatsTable({selectedElement, selectedSet, points}) {
             return "terrible";
         };
 
+        const elements = [
+            "Atak", "Zagrywka", "Blok", "Przyjęcie", "Obrona", "Dogranie",
+            "Błąd przeciwnika", "Nietypowy błąd"
+        ];
 
-        if (selectedElement && selectedElement !== "Wszystkie elementy") {
-            const filteredByElement = filteredPoints.filter(p => p[6] === selectedElement);
-            const total = filteredByElement.length || 1;
+        const relevantElements =
+            selectedElement && selectedElement !== "Wszystkie elementy"
+                ? [selectedElement]
+                : elements;
 
-            const createRows = (element) => {
-                switch (element) {
-                    case "Zagrywka":
-                        return [
-                            {outcome: "Punktowa (#)", symbol: "#", quality: "success"},
-                            {outcome: "Złe przyjęcie przeciwnika (+ / !)", symbols: ["+", "!"], quality: "good"},
-                            {outcome: "Dobre przyjęcie (-)", symbol: "-", quality: "neutral"},
-                            {outcome: "Przyjęcie na drugą stronę (/)", symbol: "/", quality: "error"},
-                            {outcome: "Błąd serwisowy (=)", symbol: "=", quality: "error"},
-                        ];
-                    case "Atak":
-                        return [
-                            {outcome: "Punktowy (#)", symbol: "#", quality: "success"},
-                            {outcome: "Obroniony (+)", symbol: "+", quality: "good"},
-                            {outcome: "Blok wyasekurowany (!)", symbol: "!", quality: "neutral"},
-                            {outcome: "Zablokowany (/)", symbol: "/", quality: "error"},
-                            {outcome: "Błąd (=)", symbol: "=", quality: "error"},
-                        ];
-                    case "Obrona":
-                        return [
-                            {outcome: "Perfekcyjna (#)", symbol: "#", quality: "success"},
-                            {outcome: "Dobra (+)", symbol: "+", quality: "good"},
-                            {outcome: "Zła (-)", symbol: "-", quality: "error"},
-                            {outcome: "Błąd (=)", symbol: "=", quality: "error"},
-                        ];
-                    case "Blok":
-                        return [
-                            {outcome: "Punktowy (#)", symbol: "#", quality: "success"},
-                            {outcome: "Wyblokowany (+)", symbol: "+", quality: "good"},
-                            {outcome: "Wyasekurowany (!)", symbol: "!", quality: "neutral"},
-                            {outcome: "Dotknięcie siatki (/)", symbol: "/", quality: "error"},
-                            {outcome: "Błąd / blok obity (=)", symbol: "=", quality: "error"},
-                        ];
-                    case "Przyjęcie":
-                        return [
-                            {outcome: "Perfekcyjne (#)", symbol: "#", quality: "success"},
-                            {outcome: "Dobre (+)", symbol: "+", quality: "good"},
-                            {outcome: "Złe (-)", symbol: "-", quality: "error"},
-                            {outcome: "Na drugą stronę (/)", symbol: "/", quality: "error"},
-                            {outcome: "Błąd (=)", symbol: "=", quality: "error"},
-                        ];
-                    default:
-                        return [
-                            {outcome: "Punkt przeciwnika (x)", symbol: "x", quality: "error"},
-                            {outcome: "Nietypowy błąd (?)", symbol: "?", quality: "error"},
-                        ];
-                }
-            };
-
-            const rowsDef = createRows(selectedElement);
-            const rows = rowsDef.map(r => {
-                const count = r.symbols
-                    ? r.symbols.reduce((sum, s) => sum + countBySymbol(filteredByElement, s), 0)
-                    : countBySymbol(filteredByElement, r.symbol);
-                const percentage = ((count / total) * 100).toFixed(1) + "%";
-                return {...r, count, percentage};
-            });
-
-            return {
-                headers: ["Outcome", "Count", "Percentage", "Quality"],
-                rows,
-            };
-        }
-
-
-        const elements = ["Zagrywka", "Atak", "Obrona", "Blok", "Przyjęcie", "Błąd przeciwnika", "Nietypowy błąd"];
-        const rows = elements.map(el => {
+        return relevantElements.map(el => {
             const data = filteredPoints.filter(p => p[6] === el);
-            const rate = successRate(data, el);
+            const total = data.length;
+            const efficiency = calcEfficiency(data);
+            const quality = getQualityFromRate(efficiency);
+
+            // policz wystąpienia symboli
+            const symbols = data.reduce((acc, p) => {
+                const sym = p[7];
+                if (!acc[sym]) acc[sym] = 0;
+                acc[sym]++;
+                return acc;
+            }, {});
+
+            const symbolStats = Object.entries(symbols).map(([sym, count]) => {
+                const percentage = ((count / total) * 100).toFixed(1);
+                return { symbol: sym, count, percentage };
+            }).sort((a, b) => b.count - a.count);
+
             return {
-                outcome: el,
-                count: data.length,
-                percentage: rate,
-                quality: getQualityFromRate(rate, el)
+                action: el,
+                count: total,
+                efficiency,
+                quality,
+                symbolStats
             };
-        });
-
-        return {
-            headers: ["Action Type", "Count", "Success Rate", "Quality"],
-            rows,
-        };
-    };
-
-    const getQualityBadge = (quality) => {
-        switch (quality) {
-            case "success":
-            case "perfect":
-                return <span className="badge success">{quality}</span>;
-            case "great":
-            case "good":
-                return <span className="badge good">{quality}</span>;
-            case "bad":
-                return <span className="badge bad">{quality}</span>;
-            case "terrible":
-            case "error":
-                return <span className="badge error">{quality}</span>;
-            default:
-                return <span className="badge neutral">Neutral</span>;
-        }
+        }).filter(row => row.count > 0);
     };
 
     const tableData = getTableData();
 
+    const getBadgeClass = (quality) => {
+        switch (quality) {
+            case "perfect": return "stats-badge success";
+            case "great": return "stats-badge good";
+            case "good": return "stats-badge neutral";
+            case "bad": return "stats-badge bad";
+            case "terrible": return "stats-badge error";
+            default: return "stats-badge neutral";
+        }
+    };
+
+    const getBadgeText = (quality) => {
+        switch (quality) {
+            case "perfect": return "Perfect";
+            case "great": return "Great";
+            case "good": return "Good";
+            case "bad": return "Poor";
+            case "terrible": return "Terrible";
+            default: return "Neutral";
+        }
+    };
+
     return (
-        <div className="detailed-stats-table">
-            <h3 className="table-title">
-                {selectedElement === "All Elements" ? "Action Summary" : `${selectedElement} Detailed Breakdown`}
-            </h3>
-            <div className="table-container">
-                <table className="stats-table">
+        <div className="stats-detailed-stats-table">
+            <h3 className="stats-table-title">Detailed Statistics</h3>
+            <div className="stats-table-container">
+                <table className="stats-stats-table">
                     <thead>
-                    <tr className="table-header">
-                        {tableData.headers.map((header, index) => (
-                            <th key={index} className="table-head">{header}</th>
-                        ))}
+                    <tr className="stats-table-header">
+                        <th className="stats-table-head">Action</th>
+                        <th className="stats-table-head stats-text-center">Count</th>
+                        <th className="stats-table-head">Efficiency</th>
+                        <th className="stats-table-head">Details by Symbol</th>
+                        <th className="stats-table-head">Quality</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {tableData.rows.map((row, index) => (
-                        <tr key={index} className="table-row">
-                            <td className="table-cell outcome">{row.outcome}</td>
-                            <td className="table-cell">{row.count}</td>
-                            <td className="table-cell">{row.percentage}</td>
-                            <td className="table-cell">{getQualityBadge(row.quality)}</td>
+                    {tableData.map((row, index) => (
+                        <tr key={index} className="stats-table-row">
+                            <td className="stats-table-cell">{row.action}</td>
+                            <td className="stats-table-cell stats-text-center">{row.count}</td>
+                            <td className="stats-table-cell">
+                                <div className="stats-efficiency-display">
+                                    <div className="stats-progress-bar-container">
+                                        <div
+                                            className="stats-progress-bar-fill"
+                                            style={{ width: `${row.efficiency}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="stats-efficiency-text">{row.efficiency}%</span>
+                                </div>
+                            </td>
+                            <td className="stats-table-cell">
+                                <div className="stats-symbol-breakdown">
+                                    {row.symbolStats.map((s, i) => (
+                                        <div key={i} className="stats-symbol-item">
+                                            <span className="stats-symbol-char">{s.symbol}</span>
+                                            <span className="stats-symbol-count">{s.count}</span>
+                                            <span className="stats-symbol-percent">({s.percentage}%)</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </td>
+                            <td className="stats-table-cell">
+                                <span className={getBadgeClass(row.quality)}>
+                                    {getBadgeText(row.quality)}
+                                </span>
+                            </td>
                         </tr>
                     ))}
                     </tbody>

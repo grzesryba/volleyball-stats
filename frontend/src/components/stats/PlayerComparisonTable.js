@@ -25,39 +25,39 @@ function PlayerComparisonTable({selectedPlayer, points}) {
         });
 
         return (
-            <div className="player-comparison-table">
-                <h3 className="table-title">Player Performance Comparison</h3>
-                <div className="table-container">
-                    <table className="stats-table">
+            <div className="stats-player-comparison-table">
+                <h3 className="stats-table-title">Player Performance Comparison</h3>
+                <div className="stats-table-container">
+                    <table className="stats-stats-table">
                         <thead>
-                        <tr className="table-header">
-                            <th className="table-head">Player</th>
-                            <th className="table-head text-center">Attacks</th>
-                            <th className="table-head text-center">Serves</th>
-                            <th className="table-head text-center">Blocks</th>
-                            <th className="table-head text-center">Digs</th>
-                            <th className="table-head text-center">Receptions</th>
-                            <th className="table-head">Efficiency</th>
+                        <tr className="stats-table-header">
+                            <th className="stats-table-head">Player</th>
+                            <th className="stats-table-head stats-text-center">Attacks</th>
+                            <th className="stats-table-head stats-text-center">Serves</th>
+                            <th className="stats-table-head stats-text-center">Blocks</th>
+                            <th className="stats-table-head stats-text-center">Digs</th>
+                            <th className="stats-table-head stats-text-center">Receptions</th>
+                            <th className="stats-table-head">Efficiency</th>
                         </tr>
                         </thead>
                         <tbody>
                         {playerStats.map((player, index) => (
-                            <tr key={index} className="table-row">
-                                <td className="table-cell player-name">{player.name}</td>
-                                <td className="table-cell text-center">{player.attacks}</td>
-                                <td className="table-cell text-center">{player.serves}</td>
-                                <td className="table-cell text-center">{player.blocks}</td>
-                                <td className="table-cell text-center">{player.digs}</td>
-                                <td className="table-cell text-center">{player.receptions}</td>
-                                <td className="table-cell">
-                                    <div className="efficiency-display">
-                                        <div className="progress-bar-container">
+                            <tr key={index} className="stats-table-row">
+                                <td className="stats-table-cell stats-player-name">{player.name}</td>
+                                <td className="stats-table-cell stats-text-center">{player.attacks}</td>
+                                <td className="stats-table-cell stats-text-center">{player.serves}</td>
+                                <td className="stats-table-cell stats-text-center">{player.blocks}</td>
+                                <td className="stats-table-cell stats-text-center">{player.digs}</td>
+                                <td className="stats-table-cell stats-text-center">{player.receptions}</td>
+                                <td className="stats-table-cell">
+                                    <div className="stats-efficiency-display">
+                                        <div className="stats-progress-bar-container">
                                             <div
-                                                className="progress-bar-fill"
-                                                style={{width: `${player.efficiency}%`}}
+                                                className="stats-progress-bar-fill"
+                                                style={{width: `${Math.max(player.efficiency, 0)}%`}}
                                             ></div>
                                         </div>
-                                        <span className="efficiency-text">{player.efficiency}%</span>
+                                        <span className="stats-efficiency-text">{player.efficiency}%</span>
                                     </div>
                                 </td>
                             </tr>
@@ -107,41 +107,41 @@ function PlayerComparisonTable({selectedPlayer, points}) {
     const sortedStats = stats.sort((a, b) => b.count - a.count);
 
     return (
-        <div className="player-comparison-table">
-            <h3 className="table-title">Detailed Breakdown – {selectedPlayer}</h3>
-            <div className="table-container">
-                <table className="stats-table">
+        <div className="stats-player-comparison-table">
+            <h3 className="stats-table-title">Detailed Breakdown – {selectedPlayer}</h3>
+            <div className="stats-table-container">
+                <table className="stats-stats-table">
                     <thead>
-                    <tr className="table-header">
-                        <th className="table-head">Action Type</th>
-                        <th className="table-head text-center">Count</th>
-                        <th className="table-head">Efficiency</th>
-                        <th className="table-head">Details by Symbol</th>
+                    <tr className="stats-table-header">
+                        <th className="stats-table-head">Action Type</th>
+                        <th className="stats-table-head stats-text-center">Count</th>
+                        <th className="stats-table-head">Efficiency</th>
+                        <th className="stats-table-head">Details by Symbol</th>
                     </tr>
                     </thead>
                     <tbody>
                     {sortedStats.map((row, index) => (
-                        <tr key={index} className="table-row">
-                            <td className="table-cell">{row.element}</td>
-                            <td className="table-cell text-center">{row.count}</td>
-                            <td className="table-cell">
-                                <div className="efficiency-display">
-                                    <div className="progress-bar-container">
+                        <tr key={index} className="stats-table-row">
+                            <td className="stats-table-cell">{row.element}</td>
+                            <td className="stats-table-cell stats-text-center">{row.count}</td>
+                            <td className="stats-table-cell">
+                                <div className="stats-efficiency-display">
+                                    <div className="stats-progress-bar-container">
                                         <div
-                                            className="progress-bar-fill"
+                                            className="stats-progress-bar-fill"
                                             style={{width: `${row.efficiency}%`}}
                                         ></div>
                                     </div>
-                                    <span className="efficiency-text">{row.efficiency}%</span>
+                                    <span className="stats-efficiency-text">{row.efficiency}%</span>
                                 </div>
                             </td>
-                            <td className="table-cell">
-                                <div className="symbol-breakdown">
+                            <td className="stats-table-cell">
+                                <div className="stats-symbol-breakdown">
                                     {row.symbolStats.map((s, i) => (
-                                        <div key={i} className="symbol-item">
-                                            <span className="symbol-char">{s.symbol}</span>
-                                            <span className="symbol-count">{s.count}</span>
-                                            <span className="symbol-percent">({s.percentage}%)</span>
+                                        <div key={i} className="stats-symbol-item">
+                                            <span className="stats-symbol-char">{s.symbol}</span>
+                                            <span className="stats-symbol-count">{s.count}</span>
+                                            <span className="stats-symbol-percent">({s.percentage}%)</span>
                                         </div>
                                     ))}
                                 </div>

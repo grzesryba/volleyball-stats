@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_FILE = "../database/volleyball.db"
+DB_FILE = "volleyball.db"
 
 
 def get_connection():

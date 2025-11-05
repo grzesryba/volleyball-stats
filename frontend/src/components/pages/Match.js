@@ -214,10 +214,14 @@ function Match() {
     }, [servePositions, isMyTeamServing]);
 
     useEffect(() => {
-        if(!currentSetId) {
-            createNewSet()
+        async function x() {
+            if (!currentSetId && setNumber > 1) {
+                await createNewSet()
+            }
         }
+        x();
     }, [setNumber]);
+
 
     const createStartingPosition = async () => {
         if (!activeMatchConfig) return;
@@ -263,6 +267,11 @@ function Match() {
 
         createStartingPosition()
         fetchPlayers()
+
+        if (!savedState) {
+            createNewSet()
+        }
+
     }, []);
 
 
@@ -342,7 +351,7 @@ function Match() {
         }
     }
 
-    const set_point_winner = async (winner, pointId=currentPointId) => {
+    const set_point_winner = async (winner, pointId = currentPointId) => {
 
         let x = {
             winner: winner
@@ -381,7 +390,7 @@ function Match() {
     }
 
 
-    async function handleAddPoint(winnerTeam, p_id=currentPointId) {
+    async function handleAddPoint(winnerTeam, p_id = currentPointId) {
         if (!activeMatchConfig) return;
 
         if (!p_id) {
@@ -401,7 +410,7 @@ function Match() {
             setIsMyTeamServing(true);
 
             // handlePointSituations("x", "Błąd przeciwnika")
-            set_point_winner("A",p_id)
+            set_point_winner("A", p_id)
 
             if (servePositions) {
                 setClickedPlayerId(servePositions[0])
@@ -412,7 +421,7 @@ function Match() {
             setIsMyTeamServing(false)
 
             // handlePointSituations("?", "Nietypowy błąd")
-            set_point_winner("B",p_id)
+            set_point_winner("B", p_id)
         }
 
         if ((newScoreA >= 25 && (newScoreA - newScoreB >= 2)) ||
@@ -457,6 +466,7 @@ function Match() {
                 if (data.winner) {
                     console.log("THERE WAS A WINNERRRR")
                     handleAddPoint(data.winner, point_id)
+                    return false
                 }
                 return true
             }

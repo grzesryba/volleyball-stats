@@ -4,28 +4,28 @@ import './stats.css';
 function StatsHeader({homeTeam, awayTeam, homeScore, awayScore, date}) {
     return (
         <div className="stats-header">
-            <div className="header-content">
-                <div className="header-left">
+            <div className="stats-header-content">
+                <div className="stats-header-left">
                     <div>
-                        <h1 className="header-title">
+                        <h1 className="stats-header-title">
                             Match Statistics
                         </h1>
-                        <p className="header-date">{date}</p>
+                        <p className="stats-header-date">{date}</p>
                     </div>
                 </div>
-                <div className="header-right">
-                    <div className="team-info">
-                        <p className="team-label">Home</p>
-                        <p className="team-name">{homeTeam}</p>
+                <div className="stats-header-right">
+                    <div className="stats-team-info">
+                        <p className="stats-team-label">Home</p>
+                        <p className="stats-team-name">{homeTeam}</p>
                     </div>
-                    <div className="score-container">
-                        <span className="home-score">{homeScore}</span>
-                        <span className="score-separator">-</span>
-                        <span className="away-score">{awayScore}</span>
+                    <div className="stats-score-container">
+                        <span className="stats-home-score">{homeScore}</span>
+                        <span className="stats-score-separator">-</span>
+                        <span className="stats-away-score">{awayScore}</span>
                     </div>
-                    <div className="team-info">
-                        <p className="team-label">Away</p>
-                        <p className="team-name">{awayTeam}</p>
+                    <div className="stats-team-info">
+                        <p className="stats-team-label">Away</p>
+                        <p className="stats-team-name">{awayTeam}</p>
                     </div>
                 </div>
             </div>

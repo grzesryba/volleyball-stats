@@ -42,13 +42,13 @@ function FilterBar({
     };
 
     return (
-        <div className="filter-bar">
-            <div className="filter-controls">
-                <div className="filter-group">
-                    <label className="filter-label">Set</label>
-                    <div className="dropdown">
+        <div className="stats-filter-bar">
+            <div className="stats-filter-controls">
+                <div className="stats-filter-group">
+                    <label className="stats-filter-label">Set</label>
+                    <div className="stats-dropdown">
                         <button
-                            className="dropdown-trigger"
+                            className="stats-dropdown-trigger"
                             onClick={() => setIsSetOpen(!isSetOpen)}
                         >
                             <span>{getSetLabel(selectedSet)}</span>
@@ -57,11 +57,11 @@ function FilterBar({
                             </svg>
                         </button>
                         {isSetOpen && (
-                            <div className="dropdown-content">
+                            <div className="stats-dropdown-content">
                                 {sets.map((set) => (
                                     <div
                                         key={set.value}
-                                        className={`dropdown-item ${selectedSet === set.value ? 'active' : ''}`}
+                                        className={`stats-dropdown-item ${selectedSet === set.value ? 'active' : ''}`}
                                         onClick={() => {
                                             setSelectedSet(set.value);
                                             setIsSetOpen(false);
@@ -75,11 +75,11 @@ function FilterBar({
                     </div>
                 </div>
 
-                <div className="filter-group">
-                    <label className="filter-label">Player</label>
-                    <div className="dropdown">
+                <div className="stats-filter-group">
+                    <label className="stats-filter-label">Player</label>
+                    <div className="stats-dropdown">
                         <button
-                            className="dropdown-trigger"
+                            className="stats-dropdown-trigger"
                             onClick={() => setIsPlayerOpen(!isPlayerOpen)}
                         >
                             <span>{selectedPlayer}</span>
@@ -88,11 +88,11 @@ function FilterBar({
                             </svg>
                         </button>
                         {isPlayerOpen && (
-                            <div className="dropdown-content">
+                            <div className="stats-dropdown-content">
                                 {players.map((player) => (
                                     <div
                                         key={player}
-                                        className={`dropdown-item ${selectedPlayer === player ? 'active' : ''}`}
+                                        className={`stats-dropdown-item ${selectedPlayer === player ? 'active' : ''}`}
                                         onClick={() => {
                                             setSelectedPlayer(player);
                                             setIsPlayerOpen(false);
@@ -106,11 +106,11 @@ function FilterBar({
                     </div>
                 </div>
 
-                <div className="filter-group">
-                    <label className="filter-label">Game Element</label>
-                    <div className="dropdown">
+                <div className="stats-filter-group">
+                    <label className="stats-filter-label">Game Element</label>
+                    <div className="stats-dropdown">
                         <button
-                            className="dropdown-trigger"
+                            className="stats-dropdown-trigger"
                             onClick={() => setIsElementOpen(!isElementOpen)}
                         >
                             <span>{selectedElement}</span>
@@ -119,11 +119,11 @@ function FilterBar({
                             </svg>
                         </button>
                         {isElementOpen && (
-                            <div className="dropdown-content">
+                            <div className="stats-dropdown-content">
                                 {gameElements.map((element) => (
                                     <div
                                         key={element}
-                                        className={`dropdown-item ${selectedElement === element ? 'active' : ''}`}
+                                        className={`stats-dropdown-item ${selectedElement === element ? 'active' : ''}`}
                                         onClick={() => {
                                             setSelectedElement(element);
                                             setIsElementOpen(false);
