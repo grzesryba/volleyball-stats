@@ -8,7 +8,7 @@ function Teams() {
     const [editingTeam, setEditingTeam] = useState(null);
 
     const fetchTeams = async () => {
-        const res = await fetch("http://127.0.0.1:8000/teams");
+        const res = await fetch("/api/teams");
         const data = await res.json();
         setTeams(data);
     };
@@ -20,7 +20,7 @@ function Teams() {
     const handleAddTeam = async (teamData) => {
         // Zapis drużyny
         console.log(JSON.stringify(teamData))
-        const res = await fetch("http://127.0.0.1:8000/teams", {
+        const res = await fetch("/api/teams", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(teamData),
@@ -31,7 +31,7 @@ function Teams() {
 
     const handleEditTeam = async (teamData) => {
         console.log(teamData.id)
-        const res = await fetch(`http://127.0.0.1:8000/teams/${teamData.id}`, {
+        const res = await fetch(`/api/teams/${teamData.id}`, {
             method: "PUT",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(teamData),

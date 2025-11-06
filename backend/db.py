@@ -1,6 +1,11 @@
 import sqlite3
+import os
+from pathlib import Path
 
-DB_FILE = "volleyball.db"
+
+APP_DATA_DIR = Path.home() / "VolleyballStats"
+APP_DATA_DIR.mkdir(exist_ok=True)
+DB_FILE = APP_DATA_DIR / "volleyball.db"
 
 
 def get_connection():

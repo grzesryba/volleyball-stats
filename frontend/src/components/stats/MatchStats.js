@@ -23,7 +23,7 @@ function MatchStats() {
 
     const fetchPointsSituations = async () => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/stats/match/${id}`);
+            const res = await fetch(`/api/stats/match/${id}`);
             const data = await res.json();
             setPoints(data)
             console.log(data)
@@ -34,7 +34,7 @@ function MatchStats() {
 
     const fetchMatchInfo = async () => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/match/${id}/info`);
+            const res = await fetch(`/api/match/${id}/info`);
             const data = await res.json();
             setTeamName(data.name)
             setMatchDate(data.date)
@@ -47,7 +47,7 @@ function MatchStats() {
 
     const fetchSets = async () => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/match/${id}/sets`);
+            const res = await fetch(`/api/match/${id}/sets`);
             const data = await res.json();
             if (res.ok && data) {
                 setSetsIds(data)

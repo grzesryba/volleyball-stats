@@ -7,7 +7,7 @@ function TeamModal({isOpen, onClose, onSave, existingTeam}) {
 
     useEffect(() => {
         const fetchPositions = async () => {
-            const res = await fetch("http://127.0.0.1:8000/positions");
+            const res = await fetch("/api/positions");
             const data = await res.json();
             setPositions(data);
         };
@@ -15,7 +15,7 @@ function TeamModal({isOpen, onClose, onSave, existingTeam}) {
         const getPlayers = async () => {
             if (!existingTeam) return;
 
-            const res = await fetch(`http://127.0.0.1:8000/players_team/${existingTeam.id}`);
+            const res = await fetch(`/api/players_team/${existingTeam.id}`);
             const data = await res.json();
 
             console.log("Pobrani zawodnicy:", data);

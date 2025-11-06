@@ -139,7 +139,7 @@ function Match() {
             'positions': currentPosition,
             'isMyTeamServing': isMyTeamServing
         }
-        const res = await fetch(`http://127.0.0.1:8000/ingame/positions`, {
+        const res = await fetch(`/api/ingame/positions`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(x),
@@ -176,7 +176,7 @@ function Match() {
             "match_id": id,
             "set_no": setNumber
         }
-        const res = await fetch(`http://127.0.0.1:8000/match/${id}/set/start`, {
+        const res = await fetch(`/api/match/${id}/set/start`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(setData),
@@ -196,7 +196,7 @@ function Match() {
         if (!activeMatchConfig) return;
 
         try {
-            const res = await fetch(`http://127.0.0.1:8000/players_team/${activeMatchConfig.team_A_id}`);
+            const res = await fetch(`/api/players_team/${activeMatchConfig.team_A_id}`);
             const data = await res.json();
             setTeamMembers(data || []);
         } catch (err) {
@@ -243,7 +243,7 @@ function Match() {
 
         console.log("Dane do tworzenia nowej pozycji: ", pData)
 
-        const res = await fetch(`http://127.0.0.1:8000/positioning`, {
+        const res = await fetch(`/api/positioning`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(pData),
@@ -315,7 +315,7 @@ function Match() {
 
     const add_new_positioning = async (pos = currentPosition) => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/positioning`, {
+            const res = await fetch(`/api/positioning`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(pos),
@@ -334,7 +334,7 @@ function Match() {
 
     const make_rotation = async () => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/rotation`, {
+            const res = await fetch(`/api/rotation`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(currentPosition),
@@ -357,7 +357,7 @@ function Match() {
             winner: winner
         }
 
-        const res = await fetch(`http://127.0.0.1:8000/point/${pointId}/winner?winner=${winner}`, {
+        const res = await fetch(`/api/point/${pointId}/winner?winner=${winner}`, {
             method: "POST",
         });
 
@@ -376,7 +376,7 @@ function Match() {
             winner: winner
         }
 
-        const res = await fetch(`http://127.0.0.1:8000/set/${currentSetId}/winner?winner=${winner}`, {
+        const res = await fetch(`/api/set/${currentSetId}/winner?winner=${winner}`, {
             method: "POST",
         });
 
@@ -452,7 +452,7 @@ function Match() {
             player_id: clickedPlayerId ? clickedPlayerId : player_id
         }
         try {
-            const res = await fetch(`http://127.0.0.1:8000/point_situation`, {
+            const res = await fetch(`/api/point_situation`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(ps_data),
@@ -515,7 +515,7 @@ function Match() {
             position_id: pos_id
         }
 
-        const res = await fetch(`http://127.0.0.1:8000/add_point`, {
+        const res = await fetch(`/api/add_point`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(pData),
@@ -555,7 +555,7 @@ function Match() {
             isMyTeamServing: isMyTeamServing
         }
         console.log(sData)
-        const res = await fetch('http://127.0.0.1:8000/substitution', {
+        const res = await fetch('/api/substitution', {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(sData),

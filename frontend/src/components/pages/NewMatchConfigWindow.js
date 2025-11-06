@@ -20,7 +20,7 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
 
     const fetchTeams = async () => {
         try {
-            const res = await fetch("http://127.0.0.1:8000/teams");
+            const res = await fetch("/api/teams");
             const data = await res.json();
             setTeams(data || []);
         } catch (err) {
@@ -35,7 +35,7 @@ function NewMatchConfigWindow({isOpen, handleSave, onClose}) {
             return;
         }
         try {
-            const res = await fetch(`http://127.0.0.1:8000/players_team/${selectedTeamId}`);
+            const res = await fetch(`/api/players_team/${selectedTeamId}`);
             const data = await res.json();
             setPlayers(data || []);
         } catch (err) {

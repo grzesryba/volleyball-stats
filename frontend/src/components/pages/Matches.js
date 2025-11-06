@@ -9,7 +9,7 @@ function Matches() {
     const navigate = useNavigate();
 
     const fetchMatches = async () => {
-        const res = await fetch("http://127.0.0.1:8000/matches");
+        const res = await fetch("/api/matches");
         const data = await res.json();
         setMatches(data);
     };
@@ -23,7 +23,7 @@ function Matches() {
         console.log("Info o nowym meczu:", matchConfig);
         matchConfig['team_A_id'] = matchConfig.team_id
 
-        const res = await fetch("http://127.0.0.1:8000/matches/start", {
+        const res = await fetch("/api/matches/start", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(matchConfig),

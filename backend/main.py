@@ -1,8 +1,12 @@
 import datetime
-import time
+import os
+import sys
+from pathlib import Path
 from typing import Optional, List
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from db import get_connection
 from models import Team, Match, Set, Positioning, InGameRequest, PointSituationDesc, Point, Substitution
 from logic import calculate_position, make_rotation, handle_situation, handle_substitution
@@ -12,26 +16,35 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    BASE_DIR = Path(__file__).parent
+
+FRONTEND_DIR = BASE_DIR / "frontend_build"
+
 origins = [
-    "http://localhost:3000",  # frontend React
-    "http://127.0.0.1:3000"
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # dozwolone frontendy
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-@app.get("/")
+@app.get("/api")
 def root():
     return {"message": "Volleyball Stats Backend OKAY"}
 
 
-@app.get("/teams")
+@app.get("/api/teams")
 def get_teams():
     conn = get_connection()
     c = conn.cursor()
@@ -41,7 +54,7 @@ def get_teams():
     return teams
 
 
-@app.post("/teams")
+@app.post("/api/teams")
 def add_team(team: Team):
     conn = get_connection()
     c = conn.cursor()
@@ -63,7 +76,7 @@ def add_team(team: Team):
     return {"status": "ok", "message": f"Dodano drużynę {team.name}, team_id: {team_id}"}
 
 
-@app.put("/teams/{team_id}")
+@app.put("/api/teams/{team_id}")
 def edit_team(team_id: int, team: Team):
     print(f"DEBUG: Team ID: {team_id}")
     print(f"DEBUG: Team data: {team}")
@@ -89,14 +102,12 @@ def edit_team(team_id: int, team: Team):
 
     for p in team.players:
         if hasattr(p, 'id') and p.id and p.id in current_player_ids:
-            # Update istniejącego zawodnika
             c.execute("""
                 UPDATE Players 
                 SET name = ?, surname = ?, position_id = ?, number = ?
                 WHERE id = ? AND team_id = ?
             """, (p.name, p.surname, p.position_id, p.number, p.id, team_id))
         else:
-            # Dodaj nowego zawodnika
             c.execute("""
                 INSERT INTO Players (team_id, name, surname, position_id, number)
                 VALUES (?, ?, ?, ?, ?)
@@ -107,7 +118,7 @@ def edit_team(team_id: int, team: Team):
     return {"status": "ok", "message": f"Zaktualizowano drużynę {team.name}"}
 
 
-@app.get("/players_team/{team_id}")
+@app.get("/api/players_team/{team_id}")
 def get_players_by_team_id(team_id: int):
     conn = get_connection()
     c = conn.cursor()
@@ -117,7 +128,7 @@ def get_players_by_team_id(team_id: int):
     return players
 
 
-@app.get("/positions")
+@app.get("/api/positions")
 def get_positions():
     conn = get_connection()
     c = conn.cursor()
@@ -127,7 +138,7 @@ def get_positions():
     return positions
 
 
-@app.get("/matches")
+@app.get("/api/matches")
 def get_matches():
     conn = get_connection()
     c = conn.cursor()
@@ -137,7 +148,7 @@ def get_matches():
     return matches
 
 
-@app.post("/matches/start")
+@app.post("/api/matches/start")
 def new_match(match: Match):
     conn = get_connection()
     c = conn.cursor()
@@ -157,7 +168,7 @@ def new_match(match: Match):
     return {"match_id": match_id}
 
 
-@app.post("/match/{id}/set/start")
+@app.post("/api/match/{id}/set/start")
 def new_set(set: Set):
     conn = get_connection()
     c = conn.cursor()
@@ -171,7 +182,7 @@ def new_set(set: Set):
     return {"set_id": set_id}
 
 
-@app.post("/positioning")
+@app.post("/api/positioning")
 def new_positioning(p: Positioning):
     position_id = None
 
@@ -205,19 +216,19 @@ def new_positioning(p: Positioning):
     return {"position_id": position_id}
 
 
-@app.post("/ingame/positions")
+@app.post("/api/ingame/positions")
 def calculate_positions(data: InGameRequest):
     return calculate_position(data.positions, data.isMyTeamServing)
 
 
-@app.post("/rotation")
+@app.post("/api/rotation")
 def get_new_rotation(p: Positioning):
     p = make_rotation(p)
     x = calculate_position(p, True)
     return {"position": p, "serving_position": x['serving_position'], "ingame_position": x['ingame_position']}
 
 
-@app.post("/point_situation")
+@app.post("/api/point_situation")
 def add_new_point_situation(ps: PointSituationDesc):
     winner = handle_situation(ps)
 
@@ -255,7 +266,7 @@ def add_new_point_situation(ps: PointSituationDesc):
     return {"winner": winner, "point_situation_id": ps_id, "desc": f"Dodano zdarzenie: {ps.game_element}: {ps.result}"}
 
 
-@app.post("/add_point")
+@app.post("/api/add_point")
 def add_new_point(p: Point):
     conn = get_connection()
     c = conn.cursor()
@@ -270,7 +281,7 @@ def add_new_point(p: Point):
     return {"point_id": point_id}
 
 
-@app.post("/point/{id}/winner")
+@app.post("/api/point/{id}/winner")
 def set_point_winner(id: int, winner: str):
     conn = get_connection()
     c = conn.cursor()
@@ -282,7 +293,7 @@ def set_point_winner(id: int, winner: str):
     conn.close()
 
 
-@app.post("/set/{id}/winner")
+@app.post("/api/set/{id}/winner")
 def set_set_winner(id: int, winner: str):
     conn = get_connection()
     c = conn.cursor()
@@ -294,7 +305,7 @@ def set_set_winner(id: int, winner: str):
     conn.close()
 
 
-@app.post("/substitution")
+@app.post("/api/substitution")
 def make_substitution(s: Substitution):
     print(s)
     x = handle_substitution(s)
@@ -304,12 +315,12 @@ def make_substitution(s: Substitution):
             "receive_position": x['receive_position']}
 
 
-@app.get("/stats/match/{id}")
+@app.get("/api/stats/match/{id}")
 def get_points_situations(id: int):
     return get_whole_team_stats(id)
 
 
-@app.get("/match/{id}/info")
+@app.get("/api/match/{id}/info")
 def get_match_team_name(id: int):
     conn = get_connection()
     c = conn.cursor()
@@ -333,7 +344,7 @@ def get_match_team_name(id: int):
     return {"name": team_name, "date": date, "A_winner": sets["A_winner"], "B_winner": sets["B_winner"]}
 
 
-@app.get("/match/{id}/sets")
+@app.get("/api/match/{id}/sets")
 def get_sets(id: int):
     conn = get_connection()
     c = conn.cursor()
@@ -348,3 +359,19 @@ def get_sets(id: int):
 
     return sets
 
+
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
+
+
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        file_path = FRONTEND_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIR / "index.html")
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
