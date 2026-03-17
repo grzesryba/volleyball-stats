@@ -1,19 +1,17 @@
 import React from "react";
-import Home from "../pages/Home";
-import {Link} from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import "./navigation.css";
 
 function HomeButton() {
-    return (
-        <nav style={{
-            backgroundColor: "#222",
-            color: "white",
-            padding: "10px",
-            display: "flex",
-            gap: "20px"
-        }}>
-            <Link to="/" style={{color: "white", textDecoration: "none"}}>🏐 Home</Link>
-        </nav>
-    );
+  const location = useLocation();
+  const isActive = location.pathname === "/";
+
+  return (
+    <Link to="/" className={`nav-link ${isActive ? "active" : ""}`}>
+      <span className="nav-icon">🏐</span>
+      <span>Home</span>
+    </Link>
+  );
 }
 
 export default HomeButton;

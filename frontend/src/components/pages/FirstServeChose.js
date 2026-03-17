@@ -1,13 +1,23 @@
-function FirstServeChose({ isOpen, onChoose }) {
+import React from "react";
+import "../styles/new_match_config_window.css";
+
+function FirstServeChose({isOpen, onChoose, onClose}) {
     if (!isOpen) return null;
 
     return (
-        <div style={overlayStyle}>
-            <div style={modalStyle}>
-                <h2>Who starts serving?</h2>
-                <div>
-                    <button onClick={() => onChoose("A")}>My Team</button>
-                    <button onClick={() => onChoose("B")}>Opponents</button>
+        <div className="overlayStyle">
+            <div className="modalStyle" style={{maxWidth: "450px", textAlign: "center"}}>
+                <h2 style={{marginTop: 0, color: "#1e293b"}}>Kto rozpoczyna zagrywkę?</h2>
+                <p style={{color: "#64748b", marginBottom: "2rem"}}>
+                    Wybierz drużynę, która będzie serwowała jako pierwsza.
+                </p>
+                <div style={{display: "flex", gap: "1rem", justifyContent: "center"}}>
+                    <button className="btn-primary" onClick={() => onChoose("A")}>
+                        Moja drużyna
+                    </button>
+                    <button className="btn-primary" onClick={() => onChoose("B")}>
+                        Przeciwnicy
+                    </button>
                 </div>
             </div>
         </div>
@@ -15,30 +25,3 @@ function FirstServeChose({ isOpen, onChoose }) {
 }
 
 export default FirstServeChose;
-
-
-const overlayStyle = {
-    position: "fixed",
-    top: 0, left: 0,
-    width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-};
-
-const modalStyle = {
-    backgroundColor: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    width: "600px",
-    maxHeight: "80vh",
-    overflowY: "auto"
-};
-
-const rowStyle = {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "5px",
-    alignItems: "center"
-};

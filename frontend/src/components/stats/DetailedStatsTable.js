@@ -39,7 +39,6 @@ function DetailedStatsTable({ selectedElement, selectedSet, points }) {
             const efficiency = calcEfficiency(data);
             const quality = getQualityFromRate(efficiency);
 
-            // policz wystąpienia symboli
             const symbols = data.reduce((acc, p) => {
                 const sym = p[7];
                 if (!acc[sym]) acc[sym] = 0;

@@ -72,7 +72,6 @@ function Match() {
     const [endMatchButtonClicked, setEndMatchButtonClicked] = useState(false)
     const [matchEnded, setMatchEnded] = useState()
 
-    // Zapisz matchConfig do localStorage, jeśli istnieje
     useEffect(() => {
         if (matchConfig && !savedState) {
             const configToSave = {
@@ -82,7 +81,6 @@ function Match() {
         }
     }, [matchConfig]);
 
-    // Pobierz matchConfig z localStorage jeśli nie ma w location.state
     const getMatchConfig = () => {
         if (matchConfig) return matchConfig;
 

@@ -1,20 +1,17 @@
-import React, {useState} from "react";
-import {Link} from "react-router-dom";
-
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import "./navigation.css";
 
 function MyTeamsButton() {
-    return (
-        <nav style={{
-            backgroundColor: "#222",
-            color: "white",
-            padding: "10px",
-            display: "flex",
-            gap: "20px"
-        }}>
-            <Link to="/teams" style={{color: "white", textDecoration: "none"}}>🏐 Drużyny</Link>
-        </nav>
-    );
+  const location = useLocation();
+  const isActive = location.pathname === "/teams";
+
+  return (
+    <Link to="/teams" className={`nav-link ${isActive ? "active" : ""}`}>
+      <span className="nav-icon">🏋️</span>
+      <span>Drużyny</span>
+    </Link>
+  );
 }
 
 export default MyTeamsButton;
-

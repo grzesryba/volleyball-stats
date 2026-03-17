@@ -1,23 +1,18 @@
 import React from 'react';
-import './styles/new_match_config_window.css'
+import './styles/new_match_config_window.css';
 
 function CourtSetup({players, positions, liberoId, assignPlayerToZone, title = "Ustawienie początkowe"}) {
-
     return (
         <div className="courtWrapper">
-            <h3>Ustawienie początkowe</h3>
+            <h3>{title}</h3>
             <div className="courtGrid">
                 {[4, 3, 2, 5, 6, 1].map((zone) => {
-                    // id zawodników przypisanych do innych stref (bez bieżącej strefy)
                     const assignedPlayerIds = Object.values(positions)
                         .filter((p) => p && p.id !== positions[zone]?.id)
                         .map((p) => p.id);
-
-                    // zablokuj także przypisanie zawodnika będącego libero
                     if (liberoId && liberoId !== positions[zone]?.id) {
                         assignedPlayerIds.push(liberoId);
                     }
-
                     return (
                         <div key={zone} className="courtCell">
                             <strong>{zone}</strong>
